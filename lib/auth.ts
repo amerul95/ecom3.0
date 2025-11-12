@@ -13,6 +13,7 @@ const loginSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma) as any,
+  trustHost: true, // Trust localhost and other hosts in development
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

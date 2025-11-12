@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireBuyer } from "@/lib/auth-helpers";
 import { z } from "zod";
+import { errorToResponse, handleDatabaseError, ValidationError, NotFoundError } from "@/lib/errors";
 
 const addToCartSchema = z.object({
-  productId: z.string(),
+  productId: z.string().min(1, "Product ID is required"),
   variantId: z.string().optional(),
-  quantity: z.number().int().positive().default(1),
+  quantity: z.number().int().positive().max(100, "Quantity cannot exceed 100").default(1),
 });
 
-// GET /api/cart - Get user's cart
+/**
+ * GET /api/cart
+ * Get user's cart with all items and calculated totals
+ * @returns Cart data with items, total, and item count
+ */
 export async function GET(request: NextRequest) {
   try {
     const user = await requireBuyer();
@@ -50,19 +55,20 @@ export async function GET(request: NextRequest) {
       total: total.toFixed(2),
       itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
     });
-  } catch (error: any) {
-    if (error.message === "Unauthorized" || error.message.includes("Forbidden")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
-    console.error("GET /api/cart error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const { status, body } = errorToResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
-// POST /api/cart - Add item to cart
+/**
+ * POST /api/cart
+ * Add item to cart or update quantity if item already exists
+ * @param productId - Product ID (required)
+ * @param variantId - Variant ID (optional)
+ * @param quantity - Quantity to add (default: 1, max: 100)
+ * @returns Created or updated cart item
+ */
 export async function POST(request: NextRequest) {
   try {
     const user = await requireBuyer();
@@ -78,32 +84,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("Product", validated.productId);
     }
 
     // Check variant if provided
     if (validated.variantId) {
       const variant = product.variants?.find((v) => v.id === validated.variantId);
       if (!variant) {
-        return NextResponse.json(
-          { error: "Variant not found" },
-          { status: 404 }
-        );
+        throw new NotFoundError("Variant", validated.variantId);
       }
       if (variant.stock < validated.quantity) {
-        return NextResponse.json(
-          { error: "Insufficient stock for variant" },
-          { status: 400 }
+        throw new ValidationError(
+          `Insufficient stock for variant. Available: ${variant.stock}, Requested: ${validated.quantity}`
         );
       }
     } else {
       if (product.stock < validated.quantity) {
-        return NextResponse.json(
-          { error: "Insufficient stock" },
-          { status: 400 }
+        throw new ValidationError(
+          `Insufficient stock. Available: ${product.stock}, Requested: ${validated.quantity}`
         );
       }
     }
@@ -119,9 +117,10 @@ export async function POST(request: NextRequest) {
 
     if (existingItem) {
       // Update quantity
+      const newQuantity = existingItem.quantity + validated.quantity;
       const cartItem = await prisma.cartItem.update({
         where: { id: existingItem.id },
-        data: { quantity: existingItem.quantity + validated.quantity },
+        data: { quantity: newQuantity },
         include: {
           product: true,
           variant: true,
@@ -144,21 +143,23 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(cartItem, { status: 201 });
     }
-  } catch (error: any) {
-    if (error.message === "Unauthorized" || error.message.includes("Forbidden")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }
-    console.error("POST /api/cart error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    
+    // Handle Prisma errors
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const dbError = handleDatabaseError(error);
+      const { status, body } = errorToResponse(dbError);
+      return NextResponse.json(body, { status });
+    }
+    
+    const { status, body } = errorToResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

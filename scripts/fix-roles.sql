@@ -12,3 +12,4 @@ UPDATE "User" SET role = 'SELLER' WHERE role = 'ADMIN';
 
 
 
+

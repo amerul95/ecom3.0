@@ -2,25 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireBuyer } from "@/lib/auth-helpers";
 import { z } from "zod";
+import { errorToResponse, handleDatabaseError, ValidationError, NotFoundError } from "@/lib/errors";
+import { DEFAULT_COUNTRY, CURRENCY } from "@/types";
 
 const createOrderSchema = z.object({
-  shippingAddressId: z.string().optional(),
+  shippingAddressId: z.string().cuid().optional(),
   shippingInfo: z.object({
-    address: z.string(),
-    city: z.string(),
+    address: z.string().min(5, "Address must be at least 5 characters"),
+    city: z.string().min(2, "City must be at least 2 characters"),
     state: z.string().optional(),
-    postal: z.string(),
-    country: z.string().default("SG"),
+    postal: z.string().min(4, "Postal code must be at least 4 characters"),
+    country: z.string().length(2, "Country must be a 2-letter code").default(DEFAULT_COUNTRY),
   }).optional(),
 });
 
-// GET /api/orders - Get user's orders
+/**
+ * GET /api/orders
+ * Get user's orders with pagination
+ * @returns Paginated list of user's orders
+ */
 export async function GET(request: NextRequest) {
   try {
     const user = await requireBuyer();
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const skip = (page - 1) * limit;
 
     const [orders, total] = await Promise.all([
@@ -56,19 +62,18 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
-    if (error.message === "Unauthorized" || error.message.includes("Forbidden")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
-    console.error("GET /api/orders error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const { status, body } = errorToResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
-// POST /api/orders - Create order from cart
+/**
+ * POST /api/orders
+ * Create order from cart items
+ * Validates stock, calculates totals, creates order with payment record, updates stock, and clears cart
+ * @returns Created order with items, shipping, and payment
+ */
 export async function POST(request: NextRequest) {
   try {
     const user = await requireBuyer();
@@ -85,10 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (cartItems.length === 0) {
-      return NextResponse.json(
-        { error: "Cart is empty" },
-        { status: 400 }
-      );
+      throw new ValidationError("Cart is empty. Add items to your cart before placing an order.");
     }
 
     // Validate stock and calculate total
@@ -106,9 +108,8 @@ export async function POST(request: NextRequest) {
         : cartItem.product.stock;
 
       if (cartItem.quantity > availableStock) {
-        return NextResponse.json(
-          { error: `Insufficient stock for ${cartItem.product.name}` },
-          { status: 400 }
+        throw new ValidationError(
+          `Insufficient stock for ${cartItem.product.name}. Available: ${availableStock}, Requested: ${cartItem.quantity}`
         );
       }
 
@@ -133,10 +134,7 @@ export async function POST(request: NextRequest) {
         where: { id: validated.shippingAddressId },
       });
       if (!address || address.userId !== user.id) {
-        return NextResponse.json(
-          { error: "Shipping address not found" },
-          { status: 404 }
-        );
+        throw new NotFoundError("Shipping address", validated.shippingAddressId);
       }
       shippingData = {
         address: `${address.line1}${address.line2 ? `, ${address.line2}` : ""}`,
@@ -148,10 +146,7 @@ export async function POST(request: NextRequest) {
     } else if (validated.shippingInfo) {
       shippingData = validated.shippingInfo;
     } else {
-      return NextResponse.json(
-        { error: "Shipping information required" },
-        { status: 400 }
-      );
+      throw new ValidationError("Shipping information is required. Provide either shippingAddressId or shippingInfo.");
     }
 
     // Create order in transaction
@@ -172,7 +167,7 @@ export async function POST(request: NextRequest) {
             create: {
               amount: total,
               status: "INITIATED",
-              currency: "SGD",
+              currency: CURRENCY,
             },
           },
         },
@@ -220,55 +215,23 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(order, { status: 201 });
-  } catch (error: any) {
-    if (error.message === "Unauthorized" || error.message.includes("Forbidden")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }
-
-    console.error("POST /api/orders error:", error);
-    console.error("POST /api/orders error details:", {
-      message: error?.message,
-      code: error?.code,
-      meta: error?.meta,
-      stack: error?.stack,
-    });
-
-    if (error?.code === "P2025") {
-      return NextResponse.json(
-        {
-          error: "Failed to create order",
-          message: "One of the related records could not be found. Please refresh your cart and try again.",
-          code: error.code,
-        },
-        { status: 400 }
-      );
+    
+    // Handle Prisma errors
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const dbError = handleDatabaseError(error);
+      const { status, body } = errorToResponse(dbError);
+      return NextResponse.json(body, { status });
     }
-
-    if (error?.code === "P2002") {
-      return NextResponse.json(
-        {
-          error: "Failed to create order",
-          message: "Duplicate record detected when creating payment. Please try again.",
-          code: error.code,
-        },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        error: "Failed to create order. Please try again.",
-        message: error?.message,
-        code: error?.code,
-      },
-      { status: 500 }
-    );
+    
+    const { status, body } = errorToResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

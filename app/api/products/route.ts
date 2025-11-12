@@ -1,20 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { errorToResponse, ValidationError } from "@/lib/errors";
+import { PAGINATION_DEFAULTS } from "@/types";
 
 const productQuerySchema = z.object({
-  page: z.string().optional(),
-  limit: z.string().optional(),
+  page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : PAGINATION_DEFAULTS.page)),
+  limit: z.string().optional().transform((val) => {
+    const parsed = val ? parseInt(val, 10) : PAGINATION_DEFAULTS.limit;
+    return Math.min(parsed, PAGINATION_DEFAULTS.maxLimit);
+  }),
   categoryId: z.string().optional(),
   sellerId: z.string().optional(),
-  minPrice: z.string().optional(),
-  maxPrice: z.string().optional(),
+  minPrice: z.string().optional().transform((val) => (val ? parseFloat(val) : undefined)),
+  maxPrice: z.string().optional().transform((val) => (val ? parseFloat(val) : undefined)),
   search: z.string().optional(),
-  sortBy: z.string().optional(),
-  sortOrder: z.enum(["asc", "desc"]).optional(),
+  sortBy: z.enum(["name", "price", "createdAt", "updatedAt"]).optional().default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
-// GET /api/products - List products (public endpoint with filters)
+/**
+ * GET /api/products
+ * List products with filtering, sorting, and pagination
+ * Public endpoint - no authentication required
+ * @returns Paginated list of products with ratings
+ */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -30,12 +40,29 @@ export async function GET(request: NextRequest) {
       sortOrder: searchParams.get("sortOrder"),
     });
 
-    const page = parseInt(validated.page || "1");
-    const limit = parseInt(validated.limit || "20");
+    // Validate price range
+    if (validated.minPrice !== undefined && validated.maxPrice !== undefined) {
+      if (validated.minPrice > validated.maxPrice) {
+        throw new ValidationError("minPrice cannot be greater than maxPrice");
+      }
+    }
+
+    const page = validated.page;
+    const limit = validated.limit;
     const skip = (page - 1) * limit;
 
-    // Build where clause
-    const where: any = {};
+    // Build where clause with proper typing
+    const where: {
+      categoryId?: string;
+      sellerId?: string;
+      price?: { gte?: number; lte?: number };
+      OR?: Array<{ name?: { contains: string; mode: "insensitive" }; description?: { contains: string; mode: "insensitive" } }>;
+      seller: { verified: boolean };
+    } = {
+      seller: {
+        verified: true,
+      },
+    };
 
     if (validated.categoryId) {
       where.categoryId = validated.categoryId;
@@ -45,13 +72,13 @@ export async function GET(request: NextRequest) {
       where.sellerId = validated.sellerId;
     }
 
-    if (validated.minPrice || validated.maxPrice) {
+    if (validated.minPrice !== undefined || validated.maxPrice !== undefined) {
       where.price = {};
-      if (validated.minPrice) {
-        where.price.gte = parseFloat(validated.minPrice);
+      if (validated.minPrice !== undefined) {
+        where.price.gte = validated.minPrice;
       }
-      if (validated.maxPrice) {
-        where.price.lte = parseFloat(validated.maxPrice);
+      if (validated.maxPrice !== undefined) {
+        where.price.lte = validated.maxPrice;
       }
     }
 
@@ -62,13 +89,8 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Only show products from verified sellers
-    where.seller = {
-      verified: true,
-    };
-
-    const sortBy = validated.sortBy || "createdAt";
-    const sortOrder = validated.sortOrder || "desc";
+    const sortBy = validated.sortBy;
+    const sortOrder = validated.sortOrder;
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -129,20 +151,18 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }
-    console.error("GET /api/products error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const { status, body } = errorToResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
+
 
 
 

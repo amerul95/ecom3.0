@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireBuyer } from "@/lib/auth-helpers";
 import { z } from "zod";
+import { errorToResponse, handleDatabaseError, NotFoundError, AuthorizationError, ValidationError } from "@/lib/errors";
 
 const updateCartItemSchema = z.object({
-  quantity: z.number().int().positive(),
+  quantity: z.number().int().positive().max(100, "Quantity cannot exceed 100"),
 });
 
-// PATCH /api/cart/[id] - Update cart item quantity
+/**
+ * PATCH /api/cart/[id]
+ * Update cart item quantity
+ * @param id - Cart item ID
+ * @param quantity - New quantity (must be positive and not exceed stock)
+ * @returns Updated cart item
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -28,17 +35,11 @@ export async function PATCH(
     });
 
     if (!cartItem) {
-      return NextResponse.json(
-        { error: "Cart item not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("Cart item", id);
     }
 
     if (cartItem.userId !== user.id) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      throw new AuthorizationError("You do not have permission to modify this cart item");
     }
 
     // Check stock availability
@@ -47,9 +48,8 @@ export async function PATCH(
       : cartItem.product.stock;
 
     if (validated.quantity > availableStock) {
-      return NextResponse.json(
-        { error: "Insufficient stock" },
-        { status: 400 }
+      throw new ValidationError(
+        `Insufficient stock. Available: ${availableStock}, Requested: ${validated.quantity}`
       );
     }
 
@@ -64,25 +64,32 @@ export async function PATCH(
     });
 
     return NextResponse.json(updated);
-  } catch (error: any) {
-    if (error.message === "Unauthorized" || error.message.includes("Forbidden")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }
-    console.error("PATCH /api/cart/[id] error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    
+    // Handle Prisma errors
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const dbError = handleDatabaseError(error);
+      const { status, body } = errorToResponse(dbError);
+      return NextResponse.json(body, { status });
+    }
+    
+    const { status, body } = errorToResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
-// DELETE /api/cart/[id] - Remove item from cart
+/**
+ * DELETE /api/cart/[id]
+ * Remove item from cart
+ * @param id - Cart item ID
+ * @returns Success confirmation
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -97,17 +104,11 @@ export async function DELETE(
     });
 
     if (!cartItem) {
-      return NextResponse.json(
-        { error: "Cart item not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("Cart item", id);
     }
 
     if (cartItem.userId !== user.id) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      throw new AuthorizationError("You do not have permission to delete this cart item");
     }
 
     await prisma.cartItem.delete({
@@ -115,15 +116,16 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    if (error.message === "Unauthorized" || error.message.includes("Forbidden")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+  } catch (error: unknown) {
+    // Handle Prisma errors
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const dbError = handleDatabaseError(error);
+      const { status, body } = errorToResponse(dbError);
+      return NextResponse.json(body, { status });
     }
-    console.error("DELETE /api/cart/[id] error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    
+    const { status, body } = errorToResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

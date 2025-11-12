@@ -1,14 +1,36 @@
 import crypto from "crypto";
+import { ExternalServiceError } from "@/lib/errors";
+import { CURRENCY } from "@/types";
+
+/**
+ * OxPay Payment Gateway Service
+ * Handles payment processing, queries, refunds, and webhook verification
+ */
 
 // OxPay API Configuration
 const OXPAY_BASE_URL = process.env.OXPAY_BASE_URL || "https://gw2.mcpayment.net";
 const OXPAY_MCPTID = process.env.OXPAY_MCPTID || "";
-// userId and password are optional for eCom - removed per specification
-// const OXPAY_USER_ID = process.env.OXPAY_USER_ID || "";
-// const OXPAY_PASSWORD = process.env.OXPAY_PASSWORD || "";
 const OXPAY_PASSWORD_KEY = process.env.OXPAY_PASSWORD_KEY || "";
 const OXPAY_STATUS_URL = process.env.OXPAY_STATUS_URL || "";
 const OXPAY_RETURN_URL = process.env.OXPAY_RETURN_URL || "";
+
+/**
+ * Validate OxPay configuration
+ */
+function validateConfig(): void {
+  if (!OXPAY_MCPTID) {
+    throw new Error("OXPAY_MCPTID environment variable is required");
+  }
+  if (!OXPAY_PASSWORD_KEY) {
+    throw new Error("OXPAY_PASSWORD_KEY environment variable is required");
+  }
+  if (!OXPAY_STATUS_URL) {
+    throw new Error("OXPAY_STATUS_URL environment variable is required");
+  }
+  if (!OXPAY_RETURN_URL) {
+    throw new Error("OXPAY_RETURN_URL environment variable is required");
+  }
+}
 
 // Payment states from OxPay
 export enum OxPayState {
@@ -61,12 +83,22 @@ function minorToAmount(minor: number): number {
  * @param amount - Amount in major currency units (e.g., 100.50 for S$ 100.50)
  * @param currency - Currency code (default: SGD)
  * @returns Payment URL for redirect
+ * @throws ExternalServiceError if OxPay API call fails
  */
 export async function createRedirectPayment(
   referenceNo: string,
   amount: number,
-  currency: string = "MYR"
+  currency: string = CURRENCY
 ): Promise<{ paymentUrl: string; referenceNo: string }> {
+  validateConfig();
+  
+  if (!referenceNo || referenceNo.trim().length === 0) {
+    throw new Error("Reference number is required");
+  }
+  
+  if (amount <= 0) {
+    throw new Error("Amount must be greater than 0");
+  }
   console.log("🔵 [OxPay] createRedirectPayment called");
   console.log("📋 [OxPay] Input parameters:", {
     referenceNo,
@@ -129,7 +161,11 @@ export async function createRedirectPayment(
         statusText: response.statusText,
         body: errorText,
       });
-      throw new Error(`OxPay API error: ${response.status} - ${errorText}`);
+      throw new ExternalServiceError(
+        "OxPay",
+        `API returned ${response.status}: ${errorText}`,
+        { status: response.status, statusText: response.statusText }
+      );
     }
 
     const data = await response.json();
@@ -141,7 +177,11 @@ export async function createRedirectPayment(
         respMsg: data.respMsg,
         fullResponse: data,
       });
-      throw new Error(`OxPay error: ${data.respMsg || "Unknown error"}`);
+      throw new ExternalServiceError(
+        "OxPay",
+        data.respMsg || "Unknown error",
+        { respCode: data.respCode, fullResponse: data }
+      );
     }
 
     const paymentUrl = data.paymentUrl || data.redirectUrl;
@@ -155,20 +195,31 @@ export async function createRedirectPayment(
 
     if (!paymentUrl) {
       console.error("❌ [OxPay] No paymentUrl in response:", data);
-      throw new Error("Payment URL not found in OxPay response");
+      throw new ExternalServiceError(
+        "OxPay",
+        "Payment URL not found in response",
+        { response: data }
+      );
     }
 
     return {
       paymentUrl,
       referenceNo: finalReferenceNo,
     };
-  } catch (error: any) {
-    console.error("❌ [OxPay] createRedirectPayment error:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-    throw new Error(`Failed to create payment: ${error.message}`);
+  } catch (error: unknown) {
+    console.error("❌ [OxPay] createRedirectPayment error:", error);
+    
+    // Re-throw ExternalServiceError as-is
+    if (error instanceof ExternalServiceError) {
+      throw error;
+    }
+    
+    // Wrap other errors
+    if (error instanceof Error) {
+      throw new ExternalServiceError("OxPay", error.message, { originalError: error });
+    }
+    
+    throw new ExternalServiceError("OxPay", "Unknown error occurred", { error });
   }
 }
 
@@ -179,12 +230,25 @@ export async function createRedirectPayment(
  * @param amountMinor - Amount in minor units
  * @returns Payment details
  */
+/**
+ * Query payment detail by reference number
+ * @param referenceNo - Reference number to query
+ * @param currency - Currency code (default: SGD)
+ * @param amountMinor - Amount in minor units (optional)
+ * @returns Payment details from OxPay
+ * @throws ExternalServiceError if query fails
+ */
 export async function queryDetailByRef(
   referenceNo: string,
-  currency: string = "SGD",
+  currency: string = CURRENCY,
   amountMinor?: number
-): Promise<any> {
-  // For eCom, userId and password are optional - removed per specification
+): Promise<unknown> {
+  validateConfig();
+  
+  if (!referenceNo || referenceNo.trim().length === 0) {
+    throw new Error("Reference number is required");
+  }
+  
   const params: Record<string, string | number> = {
     mcptid: OXPAY_MCPTID,
     referenceNo,
@@ -209,14 +273,27 @@ export async function queryDetailByRef(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`OxPay API error: ${response.status} - ${errorText}`);
+      throw new ExternalServiceError(
+        "OxPay",
+        `Query API returned ${response.status}: ${errorText}`,
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("OxPay queryDetailByRef error:", error);
-    throw new Error(`Failed to query payment: ${error.message}`);
+    
+    if (error instanceof ExternalServiceError) {
+      throw error;
+    }
+    
+    if (error instanceof Error) {
+      throw new ExternalServiceError("OxPay", `Failed to query payment: ${error.message}`, { originalError: error });
+    }
+    
+    throw new ExternalServiceError("OxPay", "Unknown error occurred while querying payment", { error });
   }
 }
 
