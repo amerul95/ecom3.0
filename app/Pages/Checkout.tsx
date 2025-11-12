@@ -203,7 +203,7 @@ export const Checkout: React.FC = () => {
         try {
           console.log('🔵 [Checkout] Creating payment intent for order:', orderId);
           
-          const paymentResponse = await axios.post('/api/payments/oxpay/intent', {
+          const paymentResponse = await axios.post('/api/payments/oxpay-v2/intent', {
             orderId: orderId,
           });
 

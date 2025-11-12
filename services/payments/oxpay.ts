@@ -44,6 +44,8 @@ export enum OxPayState {
 
 // Generate HMAC-SHA512 signature
 function generateSignature(params: Record<string, string | number>): string {
+  console.log("🔐 [OxPay] Generating signature...");
+  
   // Exclude signature field from signature generation
   const paramsWithoutSignature = { ...params };
   delete paramsWithoutSignature.signature;
@@ -56,6 +58,9 @@ function generateSignature(params: Record<string, string | number>): string {
 
   // Add password key
   const stringToSign = `${queryString}&key=${OXPAY_PASSWORD_KEY}`;
+  
+  console.log("🔐 [OxPay] String to sign (masked):", 
+    stringToSign.replace(OXPAY_PASSWORD_KEY, "***MASKED***"));
 
   // Generate HMAC-SHA512
   const signature = crypto
@@ -63,6 +68,8 @@ function generateSignature(params: Record<string, string | number>): string {
     .update(stringToSign)
     .digest("hex")
     .toUpperCase();
+
+  console.log("🔐 [OxPay] Signature generated:", signature.substring(0, 20) + "...");
 
   return signature;
 }
@@ -243,6 +250,9 @@ export async function queryDetailByRef(
   currency: string = CURRENCY,
   amountMinor?: number
 ): Promise<unknown> {
+  console.log("🔵 [OxPay] queryDetailByRef called");
+  console.log("📋 [OxPay] Query parameters:", { referenceNo, currency, amountMinor });
+  
   validateConfig();
   
   if (!referenceNo || referenceNo.trim().length === 0) {
@@ -262,8 +272,11 @@ export async function queryDetailByRef(
   const signature = generateSignature(params);
   params.signature = signature;
 
+  const requestUrl = `${OXPAY_BASE_URL}/api/v5/query`;
+  console.log("🌐 [OxPay] Making query request to:", requestUrl);
+
   try {
-    const response = await fetch(`${OXPAY_BASE_URL}/api/v5/query`, {
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -271,8 +284,15 @@ export async function queryDetailByRef(
       body: JSON.stringify(params),
     });
 
+    console.log("📡 [OxPay] Query response status:", response.status, response.statusText);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("❌ [OxPay] Query API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       throw new ExternalServiceError(
         "OxPay",
         `Query API returned ${response.status}: ${errorText}`,
@@ -281,6 +301,7 @@ export async function queryDetailByRef(
     }
 
     const data = await response.json();
+    console.log("✅ [OxPay] Query response received:", JSON.stringify(data, null, 2));
     return data;
   } catch (error: unknown) {
     console.error("OxPay queryDetailByRef error:", error);
@@ -309,7 +330,11 @@ export async function voidTransaction(
   currency: string = "SGD",
   amountMinor: number
 ): Promise<any> {
-  // For eCom, userId and password are optional - removed per specification
+  console.log("🔵 [OxPay] voidTransaction called");
+  console.log("📋 [OxPay] Void parameters:", { referenceNo, currency, amountMinor });
+  
+  validateConfig();
+  
   const params: Record<string, string | number> = {
     mcptid: OXPAY_MCPTID,
     referenceNo,
@@ -320,8 +345,11 @@ export async function voidTransaction(
   const signature = generateSignature(params);
   params.signature = signature;
 
+  const requestUrl = `${OXPAY_BASE_URL}/api/v5/void`;
+  console.log("🌐 [OxPay] Making void request to:", requestUrl);
+
   try {
-    const response = await fetch(`${OXPAY_BASE_URL}/api/v5/void`, {
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -329,16 +357,27 @@ export async function voidTransaction(
       body: JSON.stringify(params),
     });
 
+    console.log("📡 [OxPay] Void response status:", response.status, response.statusText);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("❌ [OxPay] Void API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       throw new Error(`OxPay API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("✅ [OxPay] Void response received:", JSON.stringify(data, null, 2));
     return data;
-  } catch (error: any) {
-    console.error("OxPay voidTransaction error:", error);
-    throw new Error(`Failed to void transaction: ${error.message}`);
+  } catch (error: unknown) {
+    console.error("❌ [OxPay] voidTransaction error:", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to void transaction: ${error.message}`);
+    }
+    throw new Error("Failed to void transaction: Unknown error");
   }
 }
 
@@ -354,7 +393,11 @@ export async function refundTransaction(
   currency: string = "SGD",
   amountMinor: number
 ): Promise<any> {
-  // For eCom, userId and password are optional - removed per specification
+  console.log("🔵 [OxPay] refundTransaction called");
+  console.log("📋 [OxPay] Refund parameters:", { referenceNo, currency, amountMinor });
+  
+  validateConfig();
+  
   const params: Record<string, string | number> = {
     mcptid: OXPAY_MCPTID,
     referenceNo,
@@ -365,8 +408,11 @@ export async function refundTransaction(
   const signature = generateSignature(params);
   params.signature = signature;
 
+  const requestUrl = `${OXPAY_BASE_URL}/api/v5/refund`;
+  console.log("🌐 [OxPay] Making refund request to:", requestUrl);
+
   try {
-    const response = await fetch(`${OXPAY_BASE_URL}/api/v5/refund`, {
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -374,16 +420,27 @@ export async function refundTransaction(
       body: JSON.stringify(params),
     });
 
+    console.log("📡 [OxPay] Refund response status:", response.status, response.statusText);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("❌ [OxPay] Refund API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       throw new Error(`OxPay API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("✅ [OxPay] Refund response received:", JSON.stringify(data, null, 2));
     return data;
-  } catch (error: any) {
-    console.error("OxPay refundTransaction error:", error);
-    throw new Error(`Failed to refund transaction: ${error.message}`);
+  } catch (error: unknown) {
+    console.error("❌ [OxPay] refundTransaction error:", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to refund transaction: ${error.message}`);
+    }
+    throw new Error("Failed to refund transaction: Unknown error");
   }
 }
 
@@ -399,7 +456,11 @@ export async function captureTransaction(
   currency: string = "SGD",
   amountMinor: number
 ): Promise<any> {
-  // For eCom, userId and password are optional - removed per specification
+  console.log("🔵 [OxPay] captureTransaction called");
+  console.log("📋 [OxPay] Capture parameters:", { referenceNo, currency, amountMinor });
+  
+  validateConfig();
+  
   const params: Record<string, string | number> = {
     mcptid: OXPAY_MCPTID,
     referenceNo,
@@ -410,8 +471,11 @@ export async function captureTransaction(
   const signature = generateSignature(params);
   params.signature = signature;
 
+  const requestUrl = `${OXPAY_BASE_URL}/api/v5/capture`;
+  console.log("🌐 [OxPay] Making capture request to:", requestUrl);
+
   try {
-    const response = await fetch(`${OXPAY_BASE_URL}/api/v5/capture`, {
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -419,16 +483,27 @@ export async function captureTransaction(
       body: JSON.stringify(params),
     });
 
+    console.log("📡 [OxPay] Capture response status:", response.status, response.statusText);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("❌ [OxPay] Capture API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       throw new Error(`OxPay API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("✅ [OxPay] Capture response received:", JSON.stringify(data, null, 2));
     return data;
-  } catch (error: any) {
-    console.error("OxPay captureTransaction error:", error);
-    throw new Error(`Failed to capture transaction: ${error.message}`);
+  } catch (error: unknown) {
+    console.error("❌ [OxPay] captureTransaction error:", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to capture transaction: ${error.message}`);
+    }
+    throw new Error("Failed to capture transaction: Unknown error");
   }
 }
 
@@ -442,7 +517,15 @@ export function verifyWebhookSignature(
   payload: Record<string, any>,
   signature: string
 ): boolean {
+  console.log("🔐 [OxPay] Verifying webhook signature...");
+  console.log("🔐 [OxPay] Received signature:", signature);
+  
   const calculatedSignature = generateSignature(payload);
-  return calculatedSignature === signature.toUpperCase();
+  const isValid = calculatedSignature === signature.toUpperCase();
+  
+  console.log("🔐 [OxPay] Calculated signature:", calculatedSignature.substring(0, 20) + "...");
+  console.log("🔐 [OxPay] Signature match:", isValid);
+  
+  return isValid;
 }
 

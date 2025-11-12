@@ -1,0 +1,3006 @@
+openapi: 3.0.0
+servers:
+  - url: https://api.oxpayfinancial.com
+    description: Live Server
+  - url: https://api.uat.oxpayfinancial.com
+    description: Sandbox Server
+info:
+  title: OxPay Payments API Reference
+tags:
+  - name: User-Agent Header
+    description: >
+      **User-Agent Header Required**: Please ensure that you include a
+      `User-Agent` header in all your API requests. This helps us provide better
+      support and analytics.
+
+
+      **Syntax**: `User-Agent: <product> / <product-version> <comment>`
+
+
+      **Example**: `User-Agent: MyApp/1.0.0 (compatible; OxPay Integration)`
+  - name: Process payments
+    description: >
+      Initiate new payments, `void/cancel` payments, and process refund
+      payments. 
+
+
+      Additionally, `/payment-page` endpoint allows you to initialize a new
+      payments through hosted payment page, ensuring seamless integration for
+      online transactions.
+  - name: Payment notifications
+    description: >
+      Receive timely notifications about your payments' status where we will
+      post it through the given 'notify_url'.
+x-tagGroups:
+  - name: PAYMENTS
+    tags:
+      - User-Agent Header
+      - Process payments
+      - Retrieve payments
+  - name: WEBHOOKS
+    tags:
+      - Payment notifications
+paths:
+  /payment-page:
+    post:
+      tags:
+        - Process payments
+      summary: Get Hosted Payment Page URL
+      description: >
+        Provide the necessary information of your payment and you will receive
+        an unique URL where you can redirect to our Hosted Payment Page.
+
+
+        Do note that your terminal must be enabled with 'Ecommerce' feature for
+        this endpoint.
+      operationId: paymentPage
+      security:
+        - Bearer Token: []
+          Signature: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetHostedUrlRequest'
+            examples:
+              Get hosted url:
+                summary: Get hosted url
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '789'
+                  description: Testing
+                  success_url: http://example.com/success
+                  failure_url: http://example.com/failure
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+                  source:
+                    name: Sarah
+                    email: sarah@example.com
+                    phone: '12345678'
+                  capture: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHostedUrlResponse'
+              examples:
+                Get hosted url succeeded:
+                  summary: Get hosted url succeeded
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_hpp_url: https://hostedPage/?session_id=123123123123
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentErrorResponse'
+              examples:
+                Error:
+                  summary: 400 Error
+                  value:
+                    headers:
+                      status_code: 2
+                      status_message: REJECTED
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      status: Rejected
+                      status_desc: >-
+                        The following fields from Payload's body are invalid:
+                        ['merchant_reference_id field not found in payload'].
+  /payment:
+    post:
+      tags:
+        - Process payments
+      summary: Create payment
+      description: >
+        Initiate a new payment transaction. The request payload will vary
+        depending on the brand specified under the payment_method. 
+
+
+        The outcome of your request will be communicated asynchronously via
+        [payment
+        webhook](#tag/Payment-notifications/operation/paymentNotification).
+      operationId: CreatePayment
+      security:
+        - Bearer Token: []
+          Signature: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePayment'
+            examples:
+              GrabPay - MPQR:
+                summary: GrabPay (MPQR)
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '789'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: grabpay
+                    payment_channel: MPQR
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              GrabPay - CPQR:
+                summary: GrabPay (CPQR)
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '789'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: grabpay
+                    payment_channel: CPQR
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                      consumer_identifier: '1234567890'
+                  amount:
+                    currency: SGD
+                    value: 200
+              GrabPay Online:
+                summary: GrabPay Online
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '789'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: grabpay
+                    payment_channel: ONLINE
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              Alipay:
+                summary: Alipay
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: alipay
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              Wechat:
+                summary: Wechat
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: wechat
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              ShopeePay:
+                summary: ShopeePay
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: shopeepay
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              Dash:
+                summary: Dash
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: dash
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              Atome:
+                summary: Atome
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: atome
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              Shopback:
+                summary: Shopback
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: shopback
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              Paynow:
+                summary: Paynow
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: paynow
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+              Diners:
+                summary: Diners
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: diners
+                    card_info:
+                      name: Sarah
+                      card_number: '1234567890123456'
+                      expiry_month: '12'
+                      expiry_year: '2025'
+                      cvv: '123'
+                    capture: true
+                  amount:
+                    currency: SGD
+                    value: 1
+              Discover:
+                summary: Discover
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: discover
+                    card_info:
+                      name: Sarah
+                      card_number: '1234567890123456'
+                      expiry_month: '12'
+                      expiry_year: '2025'
+                      cvv: '123'
+                    capture: true
+                  amount:
+                    currency: SGD
+                    value: 1
+              Fiuu:
+                summary: Fiuu
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '1704443542981'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  payment_method:
+                    brand: fiuu
+                    card_info:
+                      name: Sarah
+                      card_number: '1234567890123456'
+                      expiry_month: '12'
+                      expiry_year: '2025'
+                      cvv: '123'
+                    capture: true
+                  amount:
+                    currency: SGD
+                    value: 1
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentSuccessResponse'
+              examples:
+                Grabpay (MPQR):
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: grabpay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Grabpay (CPQR):
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: grabpay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Grabpay Online:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: grabpay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                      acq_wpp_url: https://example.com/wpp
+                Alipay:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: alipay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Shopback:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: shopback
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Wechat:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: wechat
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                ShopeePay:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: shopeepay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Dash:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: dash
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Atome:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: atome
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Paynow:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: paynow
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+                Diners:
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10027260'
+                      merchant_reference_id: '1704443543098'
+                Discover:
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10027260'
+                      merchant_reference_id: '1704443543098'
+                Fiuu:
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10026135'
+                      merchant_reference_id: '1704443542998'
+                      payment_brand: visa
+                      transaction_amount: 2
+                      transaction_currency: SGD
+                      payment_expiry_time: '1748882759'
+                      redirect_url: >-
+                        https://sandbox.merchant.razer.com/RMS/demobank/direct_server_intermediate.php
+                      request_type: REDIRECT
+                      request_data:
+                        paRes: >-
+                          ZXlKUVdGOVdSVkpUU1U5T0lqb2lNUzR4SWl3aVVGaGZWRkpCVGxOQlExUkpUMDVmVkZsUVJTSTZJbE5CVEZNaUxDSlFXRjlRVlZKRFNFRlRSVjlKUkNJNklqTXdPVGs0TVRVd0lpd2lVRmhmVUVGT0lqb2lOREF4TWpnNE9EZzRPRGc0TVRnNE1TSXNJbEJZWDBOV1ZqSWlPaUl4TVRFaUxDSlFXRjlGV0ZCSlVsa2lPaUl3TnpJMklpd2lVRmhmVFVWU1EwaEJUbFJmU1VRaU9pSXlNQ0lzSWxCWVgxQlZVa05JUVZORlgwRk5UMVZPVkNJNklqSXVNREFpTENKUVdGOVFWVkpEU0VGVFJWOUVSVk5EVWtsUVZFbFBUaUk2SW5CaGVXMWxiblE2SURNd09UazRNVFV3SWl3aVVGaGZVRlZTUTBoQlUwVmZSRUZVUlNJNklqQXlNRFl5TURJMUlERTJPalF3T2pVNUlpd2lVRmhmVWtWR0lqb2lJaXdpVUZoZlExVlRWRTlOWDBaSlJVeEVNU0k2SWlJc0lsQllYME5WVTFSUFRWOUdTVVZNUkRJaU9pSWlMQ0pRV0Y5RFZWTlVUMDFmUmtsRlRFUXpJam9pSWl3aVVGaGZRMVZUVkU5TlgwWkpSVXhFTkNJNklpSXNJbEJZWDBOVlUxUlBUVjlHU1VWTVJEVWlPaUlpTENKUVdGOVRTVWNpT2lJaUxDSnRaWEpqYUdGdWRFbEVJam9pVTBKZlVFWnZlSEJoZVNKOQ==
+                      host_txn_id: 30998150
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentErrorResponse'
+              examples:
+                Error:
+                  summary: 400 Error
+                  value:
+                    headers:
+                      status_code: 2
+                      status_message: REJECTED
+                      gateway_response_datetime: '20231226033320'
+                    body:
+                      status: Rejected
+                      status_desc: >-
+                        The following fields from Payload's body are invalid:
+                        ['payment_method field not found in payload'].
+  /void:
+    post:
+      tags:
+        - Process payments
+      summary: Void payment
+      description: >
+        Void a completed sale transaction or cancel a pending QR transaction. 
+
+
+        The outcome of your request will be communicated asynchronously via
+        [void webhook](#tag/Payment-notifications/operation/voidNotification).
+      operationId: CancelPayment
+      security:
+        - Bearer Token: []
+          Signature: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelPaymentRequest'
+            examples:
+              cancel:
+                summary: Cancel
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelPaymentResponse'
+              examples:
+                Others:
+                  summary: Others
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      transaction_state: cancelled
+                      payment_brand: GrabPay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                Grabpay Online:
+                  summary: Grabpay Online
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      transaction_state: cancelled
+                      payment_brand: GrabPay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      notification_url: http://example.com/notify
+                Diners:
+                  summary: Diners
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      transaction_amount: 200
+                Discover:
+                  summary: Discover
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      transaction_amount: 200
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentErrorResponse'
+              examples:
+                Error:
+                  summary: 400 Error
+                  value:
+                    headers:
+                      status_code: 2
+                      status_message: REJECTED
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      status: Rejected
+                      status_desc: >-
+                        The following fields from Payload's body are invalid:
+                        ['merchant_reference_id field not found in payload'].
+  /refund:
+    post:
+      tags:
+        - Process payments
+      summary: Refund payment
+      description: >
+        To initiate a refund of a successful sale transaction. The result of
+        your request will be delivered asynchronously through [refund
+        webhook](#tag/Payment-notifications/operation/refundNotification).
+      operationId: RefundPayment
+      security:
+        - Bearer Token: []
+          Signature: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundPaymentRequest'
+            examples:
+              Paynow:
+                summary: Paynow
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              Wechat:
+                summary: Wechat
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              Alipay:
+                summary: Alipay
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              Dash:
+                summary: Dash
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              ShopeePay:
+                summary: ShopeePay
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              Visa:
+                summary: Visa
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              Grabpay (CPQR):
+                summary: Grabpay (CPQR)
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              Grabpay (MPQR):
+                summary: Grabpay (MPQR)
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+              Grabpay Online:
+                summary: Grabpay Online
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  oxpay_original_txn_id: '1000002'
+                  merchant_reference_id: '789'
+                  notification_url: http://example.com/notify
+                  amount:
+                    value: 200
+                    currency: SGD
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundPaymentResponse'
+              examples:
+                WeChat:
+                  summary: Wechat
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: wechat
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Paynow:
+                  summary: Paynow
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: paynow
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Alipay:
+                  summary: Alipay
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: alipay
+                      refund_amount: 200
+                      transaction_currency: SGD
+                ShopeePay:
+                  summary: ShopeePay
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: shopeepay
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Atome:
+                  summary: Atome
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: atome
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Dash:
+                  summary: Dash
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: dash
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Visa:
+                  summary: Visa
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: visa
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Grabpay (CPQR):
+                  summary: Grabpay (CPQR)
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: grabpay
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Grabpay (MPQR):
+                  summary: Grabpay (MPQR)
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: grabpay
+                      refund_amount: 200
+                      transaction_currency: SGD
+                Grabpay Online:
+                  summary: Grabpay Online
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: GrabPay
+                      refund_amount: 200
+                      notification_url: http://example.com/notify
+                      transaction_currency: SGD
+                Diners:
+                  summary: Diners
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      refund_amount: 200
+                Discover:
+                  summary: Discover
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_original_txn_id: '1000001'
+                      oxpay_txn_id: '1000002'
+                      merchant_reference_id: '789'
+                      refund_amount: 200
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentErrorResponse'
+              examples:
+                Error:
+                  summary: 400 Error
+                  value:
+                    headers:
+                      status_code: 2
+                      status_message: REJECTED
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      status: Rejected
+                      status_desc: >-
+                        The following fields from Payload's body are invalid:
+                        ['merchant_reference_id field not found in payload'].
+  /payment?session_id={session_id}:
+    get:
+      tags:
+        - Retrieve payments
+      summary: Get payment information by Session ID
+      description: >
+        Retrieve the payment information, including a list of available payment
+        brand. 
+
+
+        Do note that each session id has an expiry time associated to it. Once
+        the session id is expired, you will need to request for a new session id
+        via `/payment-page` endpoint.
+      operationId: GetPaymentBySessionId
+      security:
+        - Bearer Token: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OxpaySessionId'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPaymentBySessionIdResponse'
+              examples:
+                Get payment by Session ID succeeded:
+                  summary: Get payment by Session ID succeeded
+                  value:
+                    merchant_id: '100000001'
+                    merchant_name: ABCD Bakery Bishan Outlet
+                    terminal_id: '10000000000001'
+                    transaction_id: null
+                    expiry_datetime: 2024-01-18T05:19:23+0000
+                    merchant_reference_id: '1705551757166'
+                    transaction_currency: SGD
+                    transaction_amount: 200
+                    description: Testing
+                    payer_name: Sarah
+                    payer_email: sarah@example.com
+                    payer_phone: '987654321'
+                    payer_return_url: https://example.com/success
+                    payer_error_url: https://example.com/error
+                    payer_notification_url: https://example.com/notify
+                    payer_capture: false
+                    payment_brand_list:
+                      - brand_name: GrabPay
+                        method_name: QR
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentErrorResponse'
+              examples:
+                Error:
+                  summary: 400 Error
+                  value:
+                    headers:
+                      status_code: 2
+                      status_message: REJECTED
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      status: Rejected
+                      status_desc: Transaction has expired.
+  /payment/{oxpay_txn_id}:
+    get:
+      tags:
+        - Retrieve payments
+      summary: Get transaction by ID
+      description: |
+        Retrieve the full information of a payment transaction.
+      operationId: GetTransactionById
+      security:
+        - Bearer Token: []
+      parameters:
+        - name: oxpay_txn_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OxpayTxnId'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTransactionResponse'
+              examples:
+                Get transaction by ID succeeded:
+                  summary: Get transaction by ID succeeded
+                  value:
+                    headers:
+                      status_code: 0
+                      status_message: SUCCESS
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      oxpay_txn_id: '1000001'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      transaction_state: pending
+                      payment_brand: GrabPay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentErrorResponse'
+              examples:
+                Error:
+                  summary: 400 Error
+                  value:
+                    headers:
+                      status_code: 2
+                      status_message: REJECTED
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      status: Rejected
+                      status_desc: The requested transaction id is invalid.
+  /capture:
+    post:
+      tags:
+        - Process payments
+      summary: Capture payment
+      description: >
+        Capture a GrabPay Online payment after authorization. 
+
+
+        The outcome of your request will be communicated asynchronously via
+        [payment
+        webhook](#tag/Payment-notifications/operation/paymentNotification).
+      operationId: CapturePayment
+      security:
+        - Bearer Token: []
+          Signature: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CreatePayment'
+                - type: object
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: string
+                      description: The authorization code received from GrabPay
+                      example: 5ddaab66a1274e92ad606
+            examples:
+              GrabPay Online Capture:
+                summary: GrabPay Online Capture
+                value:
+                  merchant_id: '100000001'
+                  terminal_id: '10000000000001'
+                  merchant_reference_id: '789'
+                  oxpay_session_id: '123123123123'
+                  success_url: https://example.com/success
+                  failure_url: https://example.com/failure
+                  notification_url: http://example.com/notify
+                  code: 5ddaab66a1274e92ad606
+                  payment_method:
+                    brand: grabpay
+                    payment_channel: MPQR
+                    source:
+                      name: Sarah
+                      email: sarah@example.com
+                      phone: '12345678'
+                  amount:
+                    currency: SGD
+                    value: 200
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapturePaymentSuccessResponse'
+              examples:
+                Others:
+                  value:
+                    headers:
+                      status_code: 1
+                      status_message: PENDING
+                      gateway_response_datetime: '20231226021040'
+                    body:
+                      oxpay_txn_id: '10001387'
+                      merchant_reference_id: '789'
+                      host_txn_id: cd5e8e33ead44abba444e6e9c736f036
+                      payment_brand: grabpay
+                      transaction_amount: 200
+                      transaction_currency: SGD
+                      grabpay: {}
+                      qr_string: https://example.com/qr
+                      payment_expiry_time: '1704775857'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentErrorResponse'
+              examples:
+                Error:
+                  summary: 400 Error
+                  value:
+                    headers:
+                      status_code: 2
+                      status_message: REJECTED
+                      gateway_response_datetime: '20240103101433'
+                    body:
+                      status: Rejected
+                      status_desc: >-
+                        The following fields from Payload's body are invalid:
+                        ['code field not found in payload'].
+components:
+  schemas:
+    CreatePayment:
+      type: object
+      required:
+        - merchant_id
+        - terminal_id
+        - merchant_reference_id
+        - amount
+        - payment_method
+        - success_url
+        - failure_url
+        - notification_url
+      properties:
+        merchant_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantId'
+        terminal_id:
+          allOf:
+            - $ref: '#/components/schemas/TerminalId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        oxpay_session_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpaySessionId'
+        success_url:
+          type: string
+          description: Success URL to be redirected to after a successful payment.
+          example: https://example.com/success
+        failure_url:
+          type: string
+          description: Failure URL to redirect to after a failed payment.
+          example: https://example.com/failure
+        notification_url:
+          type: string
+          description: Notify URL to receive the webhook call on payment status updates.
+          example: http://example.com/notify
+        amount:
+          allOf:
+            - $ref: '#/components/schemas/Amount'
+        payment_method:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethod'
+      xml:
+        name: CreatePayment
+    CreatePaymentErrorResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          allOf:
+            - $ref: '#/components/schemas/CreatePaymentErrorBody'
+    CreatePaymentSuccessResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing transaction information.
+          allOf:
+            - $ref: '#/components/schemas/CreatePaymentSuccessBody'
+    CapturePaymentSuccessResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing transaction information.
+          allOf:
+            - $ref: '#/components/schemas/CapturePaymentSuccessBodyGrabpayOnline'
+    CustomResponseHeaders:
+      description: >-
+        OxPay's custom payload headers containing critical transaction
+        information.
+      type: object
+      required:
+        - status_code
+        - status_message
+        - gateway_response_datetime
+      properties:
+        status_code:
+          description: >-
+            Indicates the status code of the payment request. See [operation
+            status.](/responses/operation-status)
+          type: integer
+          format: int32
+        status_message:
+          description: Indicates the status message of the payment request.
+          type: string
+        gateway_response_datetime:
+          description: Indicates the gateway response datetime of the payment request.
+          type: string
+          format: date-time
+    CreatePaymentErrorBody:
+      type: object
+      description: OxPay's custom payload body containing transaction information.
+      required:
+        - status
+        - status_desc
+      properties:
+        status:
+          description: Indicates the status message of the payment request.
+          type: string
+        status_desc:
+          description: A short description of the payment status.
+          type: string
+    CreatePaymentSuccessBodyCommon:
+      type: object
+      required:
+        - oxpay_txn_id
+        - merchant_reference_id
+        - payment_brand
+        - transaction_amount
+        - transaction_currency
+        - qr_string
+        - payment_expiry_time
+        - host_txn_id
+      properties:
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        transaction_amount:
+          description: The amount of the transaction.
+          type: number
+        transaction_currency:
+          description: The currency of the transaction.
+          type: string
+        payment_expiry_time:
+          description: >-
+            The duration of validity for generated QR string before it is
+            invalidated.
+          type: string
+          format: timestamp
+        qr_string:
+          description: >
+            This Merchant-Present QR string generated by the acquirer. This will
+            be provided if paymentChannel is set to "MPQR".
+          type: string
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+    CreatePaymentSuccessBodyCardPayment:
+      type: object
+      required:
+        - oxpay_txn_id
+        - merchant_reference_id
+      properties:
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+    CreatePaymentSuccessBodyFiuuHostToHost:
+      type: object
+      required:
+        - oxpay_txn_id
+        - merchant_reference_id
+        - transaction_amount
+        - transaction_currency
+        - payment_expiry_time
+        - redirect_url
+        - request_type
+        - request_data
+        - host_txn_id
+      properties:
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Amount'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+        payment_expiry_time:
+          description: The time and date when the payment authorization expires.
+          type: string
+        redirect_url:
+          description: >-
+            The URL to which the user is redirected after completing the
+            transaction.
+          type: string
+        request_type:
+          description: The type of request being made (e.g., REDIRECT).
+          type: string
+        request_data:
+          description: >-
+            Additional data required for the transaction, including paRes for 3D
+            Secure authentication.
+          required:
+            - paRes
+          properties:
+            paRes:
+              type: string
+              description: Value of 3DS Secure Authentication
+        host_txn_id:
+          description: >-
+            The unique identifier for the transaction provided by the host
+            system.
+          type: string
+    CreatePaymentSuccessBodyGrabpay:
+      required:
+        - host_txn_id
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+        acq_wpp_url:
+          type: string
+          description: >-
+            The unique URL with session_id, for the Frontend Appllication to
+            re-direct to the hosted page for payment processing. (This is only
+            applicable for GrabPay Online)
+          example: https://example.com/wpp
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBodyAlipay:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBodyShopeepay:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBodyDash:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBodyAtome:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBodyWechat:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBodyPaynow:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBodyDiners:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCardPayment'
+    CreatePaymentSuccessBodyDiscover:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCardPayment'
+    CreatePaymentSuccessBodyFiuu:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyFiuuHostToHost'
+    CreatePaymentSuccessBodyShopback:
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    CreatePaymentSuccessBody:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyGrabpay'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyAlipay'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyShopeepay'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyDash'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyAtome'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyWechat'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyPaynow'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyDiners'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyDiscover'
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyFiuu'
+      discriminator:
+        propertyName: payment_brand
+        mapping:
+          grabpay: '#/components/schemas/CreatePaymentSuccessBodyGrabpay'
+          alipay: '#/components/schemas/CreatePaymentSuccessBodyAlipay'
+          shopeepay: '#/components/schemas/CreatePaymentSuccessBodyShopeepay'
+          dash: '#/components/schemas/CreatePaymentSuccessBodyDash'
+          atome: '#/components/schemas/CreatePaymentSuccessBodyAtome'
+          wechat: '#/components/schemas/CreatePaymentSuccessBodyWechat'
+          paynow: '#/components/schemas/CreatePaymentSuccessBodyPaynow'
+          diners: '#/components/schemas/CreatePaymentSuccessBodyDiners'
+          discover: '#/components/schemas/CreatePaymentSuccessBodyDiscover'
+          fiuu: '#/components/schemas/CreatePaymentSuccessBodyFiuu'
+          shopback: '#/components/schemas/CreatePaymentSuccessBodyShopback'
+    CapturePaymentSuccessBodyGrabpayOnline:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CreatePaymentSuccessBodyCommon'
+    MerchantId:
+      description: >-
+        Unique identifier for the Merchant. (This will be provided to you upon
+        successful onboarding.)
+      type: string
+      minLength: 9
+      maxLength: 9
+    TerminalId:
+      description: >-
+        Unique identifier for the Terminal. (This will be provided to you upon
+        successful onboarding.)
+      type: string
+      minLength: 14
+      maxLength: 14
+    MerchantReferenceID:
+      description: >-
+        Unique identifier or transaction ID provided by you. (Must be unique for
+        each Terminal.)
+      type: string
+      minLength: 1
+      maxLength: 100
+    OxpaySessionId:
+      description: An unique session identifier obtained from `/payment-page` endpoint.
+      type: string
+      minLength: 50
+    OxpayTxnId:
+      description: >-
+        Unique Transaction ID auto-generated by OxPay upon processing your
+        request successfully.
+      type: string
+    OriginalOxpayTxnId:
+      description: >-
+        Unique Transaction ID of the interested Transaction to be processed
+        with.
+      type: string
+    HostTxnId:
+      description: >-
+        An unique reference generated by the Acquirer to identify the different
+        payment operation.
+      type: string
+    Value:
+      type: number
+      format: integer
+      minimum: 1
+      description: >-
+        The transaction amount (Positive integer) in the smallest currency unit,
+        with no decimal point (Example -> SGD 1 = 100)
+    Currency:
+      type: string
+      minLength: 3
+      maxLength: 3
+      description: Currency in three letter code ISO 4217-Alpha 3.
+    PaymentMethodBrand:
+      description: >-
+        The brand name that will be used for processing the requested
+        transaction.
+      type: string
+      enum:
+        - GrabPay
+        - Alipay
+        - ShopeePay
+        - Dash
+        - Atome
+        - Wechat
+        - Paynow
+        - Diners
+        - Discover
+        - Fiuu
+    PaymentMethodPaymentChannelGrabPay:
+      description: >-
+        Define the POS payment channel for the transaction. Request and Response
+        payloads might via according to the selected payment channel. (This is
+        only applicable for QR transaction.). ONLINE is only applicable for
+        GrabPay Online.
+      type: string
+      enum:
+        - MPQR
+        - CPQR
+        - ONLINE
+    PaymentMethodPaymentChannel:
+      description: >-
+        Define the POS payment channel for the transaction. Request and Response
+        payloads might via according to the selected payment channel. (This is
+        only applicable for QR transaction.). ONLINE is only applicable for
+        GrabPay Online.
+      type: string
+      enum:
+        - MPQR
+        - CPQR
+    PaymentMethodPaymentChannelPaynow:
+      description: >-
+        Define the POS payment channel for the transaction. Request and Response
+        payloads might via according to the selected payment channel. (This is
+        only applicable for QR transaction.).
+      type: string
+      enum:
+        - MPQR
+    Amount:
+      description: This object contains the transaction amount information.
+      type: object
+      required:
+        - value
+        - currency
+      properties:
+        value:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+    PayerName:
+      description: Name of the payer.
+      type: string
+      maxLength: 100
+    PayerEmail:
+      description: Email address of the payer.
+      type: string
+      maxLength: 254
+    PayerPhone:
+      description: Mobile number of the payer.
+      type: string
+      maxLength: 16
+    CardNumber:
+      description: Card number of the payer.
+      type: string
+      maxLength: 16
+    ExpiryMonth:
+      description: Expiry month of the card.
+      type: string
+      maxLength: 2
+    ExpiryYear:
+      description: Expiry year of the card.
+      type: string
+      maxLength: 4
+    CVV:
+      description: CVV of the card.
+      type: string
+      maxLength: 4
+    PayerInfo:
+      type: object
+      required:
+        - name
+        - email
+        - phone
+      properties:
+        name:
+          allOf:
+            - $ref: '#/components/schemas/PayerName'
+        email:
+          allOf:
+            - $ref: '#/components/schemas/PayerEmail'
+        phone:
+          allOf:
+            - $ref: '#/components/schemas/PayerPhone'
+    CardInfo:
+      type: object
+      required:
+        - name
+        - card_number
+        - expiry_month
+        - expiry_year
+        - cvv
+      properties:
+        name:
+          allOf:
+            - $ref: '#/components/schemas/PayerName'
+        card_number:
+          allOf:
+            - $ref: '#/components/schemas/CardNumber'
+        expiry_month:
+          allOf:
+            - $ref: '#/components/schemas/ExpiryMonth'
+        expiry_year:
+          allOf:
+            - $ref: '#/components/schemas/ExpiryYear'
+        cvv:
+          allOf:
+            - $ref: '#/components/schemas/CVV'
+    GetHostedUrlResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing transaction information.
+          type: object
+          required:
+            - oxpay_hpp_url
+          properties:
+            oxpay_hpp_url:
+              description: >-
+                The unique URL with session_id, for the Frontend Appllication to
+                re-direct to the hosted page for payment processing.
+              type: string
+              maxLength: 2048
+    GetHostedUrlRequest:
+      type: object
+      required:
+        - merchant_id
+        - terminal_id
+        - merchant_reference_id
+        - description
+        - success_url
+        - failure_url
+        - notification_url
+        - amount
+        - source
+        - capture
+      properties:
+        merchant_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantId'
+        terminal_id:
+          allOf:
+            - $ref: '#/components/schemas/TerminalId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        description:
+          description: A short description for the payment transaction.
+          type: string
+        success_url:
+          type: string
+          description: >-
+            The URL that will be redirected to after the payment is successfully
+            completed.
+          example: https://example.com/success
+        failure_url:
+          type: string
+          description: >-
+            The URL that will be redirected to after the payment failed to
+            complete.
+          example: https://example.com/failure
+        notification_url:
+          type: string
+          description: >-
+            The URL that will receive the webhook call on payment status
+            updates.
+          example: http://example.com/notify
+        amount:
+          allOf:
+            - $ref: '#/components/schemas/Amount'
+        source:
+          description: This object contains the transaction source information.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+        capture:
+          description: >-
+            Indicates whether the payment will be auto-captured. (This is only
+            applicable for Card transaction.)
+          type: boolean
+    GrabPayMPQR:
+      description: GrabPay MPQR payment
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/PayerInfo'
+    GrabPayCPQR:
+      description: GrabPay CPQR payment
+      type: object
+      required:
+        - consumer_identifier
+      allOf:
+        - $ref: '#/components/schemas/PayerInfo'
+        - type: object
+          properties:
+            consumer_identifier:
+              description: >
+                This field is the consumer identifier derived from scanning the
+
+                barcode or QR code.
+
+                (Required only when paymentChannel in the request payload is
+                "CPQR".
+              type: string
+              maxLength: 18
+              minLength: 18
+    PaymentMethodGrabPay:
+      type: object
+      required:
+        - brand
+        - payment_channel
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        payment_channel:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodPaymentChannelGrabPay'
+        source:
+          description: This field contains the information of payment source.
+          oneOf:
+            - $ref: '#/components/schemas/GrabPayMPQR'
+            - $ref: '#/components/schemas/GrabPayCPQR'
+      discriminator:
+        propertyName: payment_channel
+        mapping:
+          MPQR: '#/components/schemas/GrabPayMPQR'
+          CPQR: '#/components/schemas/GrabPayCPQR'
+    PaymentMethodAlipay:
+      type: object
+      required:
+        - brand
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        source:
+          description: This field contains the information of payment source.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+    PaymentMethodDash:
+      type: object
+      required:
+        - brand
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        source:
+          description: This field contains the information of payment source.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+    PaymentMethodWechat:
+      type: object
+      required:
+        - brand
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        source:
+          description: This field contains the information of payment source.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+    PaymentMethodAtome:
+      type: object
+      required:
+        - brand
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        source:
+          description: This field contains the information of payment source.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+    PaymentMethodShopeepay:
+      type: object
+      required:
+        - brand
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        source:
+          description: This field contains the information of payment source.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+    PaymentMethodSCBPaynow:
+      type: object
+      required:
+        - brand
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        source:
+          description: This field contains the information of payment source.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+    PaymentMethodDiners:
+      type: object
+      required:
+        - brand
+        - card_info
+        - capture
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        card_info:
+          description: This field contains the information of card.
+          allOf:
+            - $ref: '#/components/schemas/CardInfo'
+        capture:
+          description: >-
+            Indicates whether the payment will be auto-captured. (This is only
+            applicable for Card transaction.)
+          type: boolean
+    PaymentMethodDiscover:
+      type: object
+      required:
+        - brand
+        - card_info
+        - capture
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        card_info:
+          description: This field contains the information of card.
+          allOf:
+            - $ref: '#/components/schemas/CardInfo'
+        capture:
+          description: >-
+            Indicates whether the payment will be auto-captured. (This is only
+            applicable for Card transaction.)
+          type: boolean
+    PaymentMethodFiuu:
+      type: object
+      required:
+        - brand
+        - card_info
+        - capture
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        card_info:
+          description: This field contains the information of card.
+          allOf:
+            - $ref: '#/components/schemas/CardInfo'
+        capture:
+          description: >-
+            Indicates whether the payment will be auto-captured. (This is only
+            applicable for Card transaction.)
+          type: boolean
+    PaymentMethodShopback:
+      type: object
+      required:
+        - brand
+        - source
+      properties:
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        source:
+          description: This field contains the information of payment source.
+          allOf:
+            - $ref: '#/components/schemas/PayerInfo'
+    PaymentMethod:
+      description: This field contains information of the payment method.
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/PaymentMethodGrabPay'
+      discriminator:
+        propertyName: brand
+        mapping:
+          grabpay: '#/components/schemas/PaymentMethodGrabPay'
+          alipay: '#/components/schemas/PaymentMethodAlipay'
+          shopeepay: '#/components/schemas/PaymentMethodShopeepay'
+          dash: '#/components/schemas/PaymentMethodDash'
+          atome: '#/components/schemas/PaymentMethodAtome'
+          wechat: '#/components/schemas/PaymentMethodWechat'
+          paynow: '#/components/schemas/PaymentMethodSCBPaynow'
+          diners: '#/components/schemas/PaymentMethodDiners'
+          discover: '#/components/schemas/PaymentMethodDiscover'
+          fiuu: '#/components/schemas/PaymentMethodFiuu'
+          shopback: '#/components/schemas/PaymentMethodShopback'
+    RefundPaymentResponseBodyCommon:
+      type: object
+      required:
+        - oxpay_txn_id
+        - oxpay_original_txn_id
+        - merchant_reference_id
+        - payment_brand
+        - refund_amount
+        - transaction_currency
+        - host_txn_id
+      properties:
+        oxpay_original_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OriginalOxpayTxnId'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        refund_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+    RefundPaymentResponseBodyDCI:
+      type: object
+      required:
+        - oxpay_txn_id
+        - oxpay_original_txn_id
+        - merchant_reference_id
+        - refund_amount
+      properties:
+        oxpay_original_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OriginalOxpayTxnId'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        refund_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+    RefundPaymentResponseBodyGrab:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+      required:
+        - host_txn_id
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+        notification_url:
+          type: string
+          description: >-
+            The URL that will receive the webhook call on payment status
+            updates. (This is only applicable for GrabPay Online)
+          example: http://example.com/notify
+    RefundPaymentResponseBodyAlipay:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+    RefundPaymentResponseBodyShopeepay:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+    RefundPaymentResponseBodyDash:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+    RefundPaymentResponseBodyAtome:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+    RefundPaymentResponseBodyWechat:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+    RefundPaymentResponseBodyPaynow:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+    RefundPaymentResponseBodyVisa:
+      allOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyCommon'
+    RefundPaymentResponseBody:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/RefundPaymentResponseBodyGrab'
+      discriminator:
+        propertyName: payment_brand
+        mapping:
+          grabpay: '#/components/schemas/RefundPaymentResponseBodyGrab'
+          alipay: '#/components/schemas/RefundPaymentResponseBodyAlipay'
+          shopeepay: '#/components/schemas/RefundPaymentResponseBodyShopeepay'
+          dash: '#/components/schemas/RefundPaymentResponseBodyDash'
+          atome: '#/components/schemas/RefundPaymentResponseBodyAtome'
+          wechat: '#/components/schemas/RefundPaymentResponseBodyWechat'
+          paynow: '#/components/schemas/RefundPaymentResponseBodyPaynow'
+          visa: '#/components/schemas/RefundPaymentResponseBodyPaynow'
+          diners: '#/components/schemas/RefundPaymentResponseBodyDCI'
+          discover: '#/components/schemas/RefundPaymentResponseBodyDCI'
+    RefundPaymentResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing transaction information.
+          allOf:
+            - $ref: '#/components/schemas/RefundPaymentResponseBody'
+    RefundPaymentRequest:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentRequest'
+    CancelPaymentResponseBodyCommon:
+      type: object
+      required:
+        - oxpay_txn_id
+        - oxpay_original_txn_id
+        - merchant_reference_id
+        - payment_brand
+        - transaction_amount
+        - transaction_currency
+        - host_txn_id
+        - transaction_state
+      properties:
+        oxpay_original_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OriginalOxpayTxnId'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+        transaction_state:
+          allOf:
+            - $ref: '#/components/schemas/TransactionState'
+    CancelPaymentResponseBodyDCI:
+      type: object
+      required:
+        - oxpay_txn_id
+        - oxpay_original_txn_id
+        - merchant_reference_id
+        - transaction_amount
+      properties:
+        oxpay_original_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OriginalOxpayTxnId'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+    CancelPaymentResponseBodyGrabpay:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+      required:
+        - host_txn_id
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+        notification_url:
+          type: string
+          description: >-
+            The URL that will receive the webhook call on payment status
+            updates. (This is only applicable for GrabPay Online)
+          example: http://example.com/notify
+    CancelPaymentResponseBodyAlipay:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBodyShopeepay:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBodyDash:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBodyAtome:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBodyWechat:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBodyPaynow:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBodyDiners:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBodyDiscover:
+      allOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyCommon'
+    CancelPaymentResponseBody:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/CancelPaymentResponseBodyGrabpay'
+      discriminator:
+        propertyName: payment_brand
+        mapping:
+          grabpay: '#/components/schemas/CancelPaymentResponseBodyGrabpay'
+          alipay: '#/components/schemas/CancelPaymentResponseBodyAlipay'
+          shopeepay: '#/components/schemas/CancelPaymentResponseBodyShopeepay'
+          dash: '#/components/schemas/CancelPaymentResponseBodyDash'
+          atome: '#/components/schemas/CancelPaymentResponseBodyAtome'
+          wechat: '#/components/schemas/CancelPaymentResponseBodyWechat'
+          paynow: '#/components/schemas/CancelPaymentResponseBodyPaynow'
+          diners: '#/components/schemas/CancelPaymentResponseBodyDCI'
+          discover: '#/components/schemas/CancelPaymentResponseBodyDCI'
+    CancelPaymentResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing transaction information.
+          allOf:
+            - $ref: '#/components/schemas/CancelPaymentResponseBody'
+    CancelPaymentRequest:
+      type: object
+      required:
+        - merchant_id
+        - terminal_id
+        - oxpay_original_txn_id
+        - merchant_reference_id
+        - notification_url
+        - amount
+      properties:
+        merchant_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantId'
+        terminal_id:
+          allOf:
+            - $ref: '#/components/schemas/TerminalId'
+        oxpay_original_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OriginalOxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        notification_url:
+          type: string
+          description: >-
+            The URL that will receive the webhook call on payment status
+            updates.
+          example: http://example.com/notify
+        amount:
+          description: This field contains the transaction amount information.
+          allOf:
+            - $ref: '#/components/schemas/Amount'
+    QueryPaymentResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing transaction information.
+          type: object
+          properties:
+            oxpay_txn_id:
+              $ref: '#/components/schemas/OxpayTxnId'
+            merchant_reference_id:
+              $ref: '#/components/schemas/MerchantReferenceID'
+            host_txn_id:
+              $ref: '#/components/schemas/HostTxnId'
+            payment_brand:
+              $ref: '#/components/schemas/PaymentMethodBrand'
+            transaction_amount:
+              $ref: '#/components/schemas/Value'
+            transaction_currency:
+              $ref: '#/components/schemas/Currency'
+            transaction_state:
+              $ref: '#/components/schemas/TransactionState'
+            transaction_type:
+              $ref: '#/components/schemas/TransactionType'
+          required:
+            - oxpay_txn_id
+            - merchant_reference_id
+            - host_txn_id
+            - payment_brand
+            - transaction_amount
+            - transaction_currency
+            - transaction_state
+            - transaction_type
+    TransactionState:
+      description: The state of the transaction.
+      type: string
+      enum:
+        - success
+        - requested
+        - authorized
+        - pending
+        - rejected
+        - error
+        - voided
+        - refunded
+        - captured
+        - capture_submitted
+        - capture_rejected
+        - sale
+    PaymentBrand:
+      type: object
+      required:
+        - brand_name
+        - method_name
+      properties:
+        brand_name:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        method_name:
+          type: string
+          enum:
+            - QR
+            - CARD
+    GetPaymentBySessionIdResponseBodyCommon:
+      type: object
+      required:
+        - merchant_id
+        - merchant_name
+        - terminal_id
+        - merchant_reference_id
+        - expiry_datetime
+        - description
+        - payer_name
+        - payer_email
+        - payer_phone
+        - transaction_amount
+        - transaction_currency
+        - payer_return_url
+        - payer_error_url
+        - payer_notification_url
+        - payer_capture
+        - payment_brand_list
+      properties:
+        merchant_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantId'
+        merchant_name:
+          description: >-
+            Merchant's name. Applicable to digital e-commerce stores and
+            physical stores.
+          type: string
+        terminal_id:
+          allOf:
+            - $ref: '#/components/schemas/TerminalId'
+        transaction_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        expiry_datetime:
+          description: The expiry time for Session ID.
+          type: string
+          format: date-time
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        description:
+          description: A short description for payment transaction.
+          type: string
+        payer_name:
+          allOf:
+            - $ref: '#/components/schemas/PayerName'
+        payer_email:
+          allOf:
+            - $ref: '#/components/schemas/PayerEmail'
+        payer_phone:
+          allOf:
+            - $ref: '#/components/schemas/PayerPhone'
+        payer_return_url:
+          type: string
+          description: >-
+            Merchant's Success URL to be redirected to after a successful
+            payment.
+        payer_error_url:
+          type: string
+          description: Merchant's Failure URL to redirect to after a failed payment.
+        payer_notification_url:
+          type: string
+          description: >-
+            Merchant's Notify URL to receive the webhook call on payment status
+            updates.
+        payer_capture:
+          description: >-
+            Indicates whether the capture operation is performed. (This is only
+            applicable for Card transaction.)
+          type: boolean
+        payment_brand_list:
+          description: List of payment brand.
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentBrand'
+    GetPaymentBySessionIdResponseBodyGrabpay:
+      allOf:
+        - $ref: '#/components/schemas/GetPaymentBySessionIdResponseBodyCommon'
+    GetPaymentBySessionIdResponseBodyAlipay:
+      allOf:
+        - $ref: '#/components/schemas/GetPaymentBySessionIdResponseBodyCommon'
+    GetPaymentBySessionIdResponse:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/GetPaymentBySessionIdResponseBodyGrabpay'
+      discriminator:
+        propertyName: payment_brand
+        mapping:
+          grabpay: '#/components/schemas/GetPaymentBySessionIdResponseBodyGrabpay'
+          alipay: '#/components/schemas/GetPaymentBySessionIdResponseBodyAlipay'
+    GetTransactionResponseBodyCommon:
+      type: object
+      required:
+        - oxpay_txn_id
+        - merchant_reference_id
+        - host_txn_id
+        - transaction_state
+        - payment_brand
+        - transaction_amount
+        - transaction_currency
+      properties:
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+        transaction_state:
+          allOf:
+            - $ref: '#/components/schemas/TransactionState'
+        payment_brand:
+          description: The brand of the payment method.
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+    GetTransactionResponseBodyGrabpay:
+      allOf:
+        - $ref: '#/components/schemas/GetTransactionResponseBodyCommon'
+    GetTransactionResponse:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing transaction information.
+          oneOf:
+            - $ref: '#/components/schemas/GetTransactionResponseBodyGrabpay'
+          discriminator:
+            propertyName: payment_brand
+            mapping:
+              grabpay: '#/components/schemas/GetTransactionResponseBodyGrabpay'
+    WebhookPaymentBodyCommon:
+      type: object
+      required:
+        - merchant_reference_id
+        - oxpay_txn_id
+        - payment_brand
+        - transaction_amount
+        - transaction_currency
+        - transaction_state
+      properties:
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        payment_brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+        transaction_state:
+          allOf:
+            - $ref: '#/components/schemas/TransactionState'
+      xml:
+        name: WebhookPaymentBodyCommon
+    WebhookPaymentBodyGrabPay:
+      allOf:
+        - $ref: '#/components/schemas/WebhookPaymentBodyCommon'
+      required:
+        - host_txn_id
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+      xml:
+        name: WebhookPaymentBodyGrabPay
+    WebhookPaymentBodyAlipay:
+      allOf:
+        - $ref: '#/components/schemas/WebhookPaymentBodyCommon'
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+      xml:
+        name: WebhookPaymentBodyAlipay
+    WebhookPaymentBody:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/WebhookPaymentBodyGrabPay'
+      discriminator:
+        propertyName: payment_brand
+        mapping:
+          grabpay: '#/components/schemas/WebhookPaymentBodyGrabPay'
+          alipay: '#/components/schemas/WebhookPaymentBodyAlipay'
+      xml:
+        name: WebhookPaymentBody
+    WebhookPayment:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          description: >-
+            OxPay's custom payload headers containing critical transaction
+            information.
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing Sale Transaction Information.
+          allOf:
+            - $ref: '#/components/schemas/WebhookPaymentBody'
+      xml:
+        name: Payment
+    WebhookRefundBodyCommon:
+      type: object
+      required:
+        - merchant_reference_id
+        - oxpay_original_txn_id
+        - oxpay_txn_id
+        - payment_brand
+        - refund_amount
+        - transaction_amount
+        - transaction_currency
+        - transaction_state
+      properties:
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        oxpay_original_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OriginalOxpayTxnId'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        transaction_state:
+          allOf:
+            - $ref: '#/components/schemas/TransactionState'
+        payment_brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        refund_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+      xml:
+        name: WebhookRefundBodyCommon
+    WebhookRefundBodyGrabPay:
+      required:
+        - host_txn_id
+      allOf:
+        - $ref: '#/components/schemas/WebhookRefundBodyCommon'
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+      xml:
+        name: WebhookRefundBodyGrabPay
+    WebhookRefundBodyAlipay:
+      allOf:
+        - $ref: '#/components/schemas/WebhookRefundBodyCommon'
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+      xml:
+        name: WebhookRefundBodyAlipay
+    WebhookRefundBody:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/WebhookRefundBodyGrabPay'
+      discriminator:
+        propertyName: payment_brand
+        mapping:
+          grabpay: '#/components/schemas/WebhookRefundBodyGrabPay'
+          alipay: '#/components/schemas/WebhookRefundBodyAlipay'
+      xml:
+        name: RefundBody
+    WebhookRefund:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          description: >-
+            OxPay's custom payload headers containing critical transaction
+            information.
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: >-
+            OxPay's custom payload body containing Refund Transaction
+            Information
+          allOf:
+            - $ref: '#/components/schemas/WebhookRefundBody'
+      xml:
+        name: WebhookRefund
+    WebhookVoidBodyCommon:
+      type: object
+      required:
+        - merchant_reference_id
+        - oxpay_txn_id
+        - payment_brand
+        - transaction_amount
+        - transaction_currency
+        - transaction_state
+      properties:
+        merchant_reference_id:
+          allOf:
+            - $ref: '#/components/schemas/MerchantReferenceID'
+        oxpay_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/OxpayTxnId'
+        transaction_state:
+          allOf:
+            - $ref: '#/components/schemas/TransactionState'
+        payment_brand:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethodBrand'
+        transaction_amount:
+          allOf:
+            - $ref: '#/components/schemas/Value'
+        transaction_currency:
+          allOf:
+            - $ref: '#/components/schemas/Currency'
+      xml:
+        name: WebhookVoidBodyCommon
+    WebhookVoidBodyGrabPay:
+      required:
+        - host_txn_id
+      allOf:
+        - $ref: '#/components/schemas/WebhookVoidBodyCommon'
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+      xml:
+        name: WebhookVoidBodyGrabPay
+    WebhookVoidBodyAlipay:
+      allOf:
+        - $ref: '#/components/schemas/WebhookVoidBodyCommon'
+      properties:
+        host_txn_id:
+          allOf:
+            - $ref: '#/components/schemas/HostTxnId'
+      xml:
+        name: WebhookVoidBodyAlipay
+    WebhookVoidBody:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/WebhookVoidBodyGrabPay'
+      discriminator:
+        propertyName: payment_brand
+        mapping:
+          grabpay: '#/components/schemas/WebhookVoidBodyGrabPay'
+          alipay: '#/components/schemas/WebhookVoidBodyAlipay'
+      xml:
+        name: WebhookVoidBody
+    WebhookVoid:
+      type: object
+      required:
+        - headers
+        - body
+      properties:
+        headers:
+          description: >-
+            OxPay's custom payload headers containing critical transaction
+            information.
+          allOf:
+            - $ref: '#/components/schemas/CustomResponseHeaders'
+        body:
+          description: OxPay's custom payload body containing Void Transaction Information
+          allOf:
+            - $ref: '#/components/schemas/WebhookVoidBody'
+      xml:
+        name: WebhookVoid
+    Resource:
+      description: The resource path or endpoint being accessed
+      type: string
+      example: domain/payment
+      xml:
+        name: Resource
+    RequestContext:
+      description: The request context
+      type: object
+      example: '{}'
+      xml:
+        name: RequestContext
+    AwsRequestId:
+      description: The AWS request ID
+      type: string
+      example: '1234567890'
+      xml:
+        name: AwsRequestId
+    TransactionType:
+      description: The type of transaction.
+      type: string
+      enum:
+        - SALE
+        - VOID
+        - REFUND
+        - CAPTURE
+  securitySchemes:
+    Signature:
+      type: signature
+      description: >
+        The Signature will need to be included in the Request/Response Header.
+        You can view and manage your Sign Keys in [the OxPay Merchant
+        Portal](https://merchant.oxpayfinancial.com)
+
+        Please refer to [Integrity](integrity) for the detailed instructions.
+
+
+        Example: "signature":
+        "17448b6efe11f0b1e818a1b093282082e94f322fde7b37b058d0ae437ee1c373"
+    Bearer Token:
+      type: apiKey
+      scheme: bearer
+      description: >
+        The API Key will need to be included in the Request Header. You can view
+        and manage your API keys in [the OxPay Merchant
+        Portal](https://merchant.oxpayfinancial.com)
+
+        Please refer to [Credentials](credentials) for the detailed
+        instructions.
+
+
+        Example: "Authorization": "Bearer
+        ak-ec00df37-99dd-4bc2-a10f-246789fcc12d"
+x-webhooks:
+  payment:
+    parameters:
+      - in: header
+        name: Signature
+        description: >
+          The Signature will be sent along with the webhook callback to make
+          sure the integrity of the payload. Merchants are adviced to validate
+          the payload with the signature using the sign key. You can view and
+          manage your Sign Keys in [the OxPay Merchant
+          Portal](https://merchant.oxpayfinancial.com)
+
+          Please refer to [Integrity](integrity) for the detailed instructions.
+
+
+          Example: "signature":
+          "17448b6efe11f0b1e818a1b093282082e94f322fde7b37b058d0ae437ee1c373"
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Payment notifications
+      summary: payment
+      description: >-
+        A notification will be sent to the notify_url when a sale transaction is
+        processed.
+      operationId: paymentNotification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayment'
+            examples:
+              payment -grabpay:
+                summary: GrabPay (Payment)
+                value:
+                  headers:
+                    status_code: 0
+                    status_message: SUCCESS
+                    gateway_response_datetime: '20240111071316'
+                  body:
+                    merchant_reference_id: '789'
+                    oxpay_txn_id: '10001396'
+                    host_txn_id: b8e4c9205a104d97bf7799cc016613bf
+                    transaction_state: success
+                    payment_brand: GrabPay
+                    transaction_amount: 100
+                    transaction_currency: SGD
+  refund:
+    parameters:
+      - in: header
+        name: Signature
+        description: >
+          The Signature will be sent along with the webhook callback to make
+          sure the integrity of the payload. Merchants are adviced to validate
+          the payload with the signature using the sign key. You can view and
+          manage your Sign Keys in [the OxPay Merchant
+          Portal](https://merchant.oxpayfinancial.com)
+
+          Please refer to [Integrity](integrity) for the detailed instructions.
+
+
+          Example: "signature":
+          "17448b6efe11f0b1e818a1b093282082e94f322fde7b37b058d0ae437ee1c373"
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Payment notifications
+      summary: refund
+      description: >-
+        A notification will be sent to the notify_url when a refund transaction
+        is processed.
+      operationId: refundNotification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookRefund'
+            examples:
+              refund - grabpay:
+                summary: GrabPay (Refund)
+                value:
+                  headers:
+                    status_code: 0
+                    status_message: SUCCESS
+                    gateway_response_datetime: '20240111091221'
+                  body:
+                    merchant_reference_id: '789'
+                    oxpay_txn_id: '10001396'
+                    host_txn_id: 1c99a4a93c3c12378a902f4567a50f68
+                    transaction_state: refunded
+                    payment_brand: GrabPay
+                    oxpay_original_txn_id: '10001396'
+                    refund_amount: 100
+                    transaction_amount: 100
+                    transaction_currency: SGD
+  void:
+    parameters:
+      - in: header
+        name: Signature
+        description: >
+          The Signature will be sent along with the webhook callback to make
+          sure the integrity of the payload. Merchants are adviced to validate
+          the payload with the signature using the sign key. You can view and
+          manage your Sign Keys in [the OxPay Merchant
+          Portal](https://merchant.oxpayfinancial.com)
+
+          Please refer to [Integrity](integrity) for the detailed instructions.
+
+
+          Example: "signature":
+          "17448b6efe11f0b1e818a1b093282082e94f322fde7b37b058d0ae437ee1c373"
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Payment notifications
+      summary: void
+      description: >-
+        A notification will be sent to the notify_url when a void or cancel
+        transaction is processed.
+      operationId: voidNotification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookVoid'
+            examples:
+              void - grabpay:
+                summary: GrabPay (Void)
+                value:
+                  headers:
+                    status_code: 0
+                    status_message: SUCCESS
+                    gateway_response_datetime: '20240111104254'
+                  body:
+                    merchant_reference_id: '789'
+                    oxpay_txn_id: '10001395'
+                    host_txn_id: 3d19976796d64e99a6d780c5r5b927db
+                    transaction_state: voided
+                    payment_brand: GrabPay
+                    transaction_amount: 100
+                    transaction_currency: SGD

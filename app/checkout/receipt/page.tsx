@@ -65,9 +65,24 @@ function ReceiptContent() {
 
     try {
       setIsLoading(true);
-      // Find payment by reference number
-      const response = await axios.get(`/api/payments/oxpay/status?ref=${encodeURIComponent(ref)}`);
-      setPayment(response.data);
+      // Find payment by reference number (try v2 first, fallback to v1)
+      try {
+        const response = await axios.get(`/api/payments/oxpay-v2/status?ref=${encodeURIComponent(ref)}`);
+        // Transform v2 response to match expected format
+        setPayment({
+          id: response.data.payment.id,
+          status: response.data.payment.status,
+          amount: response.data.payment.amount,
+          currency: response.data.payment.currency,
+          providerRef: response.data.payment.providerRef,
+          order: response.data.order,
+        });
+      } catch (v2Error: any) {
+        // Fallback to v1 endpoint
+        console.log("⚠️ [Receipt] v2 endpoint failed, trying v1:", v2Error);
+        const response = await axios.get(`/api/payments/oxpay/status?ref=${encodeURIComponent(ref)}`);
+        setPayment(response.data);
+      }
     } catch (err: any) {
       console.error('Failed to fetch payment status:', err);
       setError(err.response?.data?.error || 'Failed to load payment status');

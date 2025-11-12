@@ -10,10 +10,12 @@ const createOrderSchema = z.object({
   shippingInfo: z.object({
     address: z.string().min(5, "Address must be at least 5 characters"),
     city: z.string().min(2, "City must be at least 2 characters"),
-    state: z.string().optional(),
+    state: z.string().optional().nullable(),
     postal: z.string().min(4, "Postal code must be at least 4 characters"),
     country: z.string().length(2, "Country must be a 2-letter code").default(DEFAULT_COUNTRY),
   }).optional(),
+  paymentMethod: z.string().optional(),
+  voucherCode: z.string().optional(),
 });
 
 /**
@@ -144,7 +146,16 @@ export async function POST(request: NextRequest) {
         country: address.country,
       };
     } else if (validated.shippingInfo) {
-      shippingData = validated.shippingInfo;
+      // Clean up shipping data - convert empty strings to null for optional fields
+      shippingData = {
+        address: validated.shippingInfo.address,
+        city: validated.shippingInfo.city,
+        state: validated.shippingInfo.state && validated.shippingInfo.state.trim() !== "" 
+          ? validated.shippingInfo.state 
+          : null,
+        postal: validated.shippingInfo.postal,
+        country: validated.shippingInfo.country || DEFAULT_COUNTRY,
+      };
     } else {
       throw new ValidationError("Shipping information is required. Provide either shippingAddressId or shippingInfo.");
     }
@@ -165,6 +176,7 @@ export async function POST(request: NextRequest) {
           },
           payment: {
             create: {
+              provider: "oxpay",
               amount: total,
               status: "INITIATED",
               currency: CURRENCY,
@@ -216,7 +228,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error: unknown) {
+    // Log the full error for debugging
+    console.error("POST /api/orders error:", error);
+    
     if (error instanceof z.ZodError) {
+      console.error("Validation error details:", error.issues);
       return NextResponse.json(
         { error: "Validation error", details: error.issues },
         { status: 400 }
@@ -225,12 +241,23 @@ export async function POST(request: NextRequest) {
     
     // Handle Prisma errors
     if (typeof error === "object" && error !== null && "code" in error) {
+      console.error("Database error:", {
+        code: (error as { code: string }).code,
+        meta: (error as { meta?: unknown }).meta,
+      });
       const dbError = handleDatabaseError(error);
       const { status, body } = errorToResponse(dbError);
       return NextResponse.json(body, { status });
     }
     
+    // Handle AppError instances
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    
     const { status, body } = errorToResponse(error);
+    console.error("Returning error response:", { status, body });
     return NextResponse.json(body, { status });
   }
 }
