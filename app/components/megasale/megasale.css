@@ -1,0 +1,14 @@
+.bg-color{
+    background-color:#2C2C5B ;
+}
+.bg-color:hover{
+    background-color: #FBF5FF;
+    color: #2C2C5B;
+
+}
+.bg-container{
+    background-image: linear-gradient(#FBF5FF, white);
+}
+.h2-ms,.p-ms{
+    color: #2C2C5B;
+}

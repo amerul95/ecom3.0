@@ -1,0 +1,301 @@
+// Prisma schema for E-Commerce App (Next.js + PostgreSQL + OxPay)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  INITIATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+// Auth.js v5 tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// User model (unified for all roles: BUYER, SELLER, ADMIN)
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?   // Hashed password for credentials provider
+  image         String?
+  role          Role      @default(BUYER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  sellerProfile   SellerProfile?
+  orders          Order[]
+  reviews         Review[]
+  addresses       Address[]
+  cartItems       CartItem[]
+
+  @@index([email])
+  @@index([role])
+}
+
+// SellerProfile model (linked to User with role SELLER)
+model SellerProfile {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String   @unique
+  storeName  String
+  verified   Boolean  @default(false)
+  kycDocsUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  products   Product[]
+
+  @@index([userId])
+  @@index([verified])
+}
+
+// Category model (supports parent/child hierarchy)
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  parentId  String?
+  parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryToCategory")
+  products  Product[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+// Product model (replaces Item)
+model Product {
+  id          String    @id @default(cuid())
+  seller      SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sellerId    String
+  name        String
+  slug        String    @unique
+  description String    @db.Text
+  price       Decimal   @db.Decimal(10,2)
+  stock       Int       @default(0)
+  images      String[]
+  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+  variants    Variant[]
+  reviews     Review[]
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([createdAt])
+}
+
+// Variant model (for product variations like size, color)
+model Variant {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  name      String   // e.g., "Color: Red, Size: M"
+  sku       String   @unique
+  price     Decimal? @db.Decimal(10,2) // Override product price if set
+  stock     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+// Review model
+model Review {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  rating    Int      // 1-5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@unique([productId, userId]) // One review per user per product
+}
+
+// Address model (for shipping addresses)
+model Address {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  label     String?  // e.g., "Home", "Work"
+  line1     String
+  line2     String?
+  city      String
+  state     String?
+  postal    String
+  country   String   @default("SG")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// CartItem model (server-side cart)
+model CartItem {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  variant   Variant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId String?
+  quantity  Int      @default(1)
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([productId])
+  @@unique([userId, productId, variantId]) // One cart item per user/product/variant combo
+}
+
+// Order model
+model Order {
+  id         String        @id @default(cuid())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  status     OrderStatus   @default(PENDING)
+  total      Decimal       @db.Decimal(10,2)
+  items      OrderItem[]
+  payment    Payment?
+  shipping   ShippingInfo?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// OrderItem model
+model OrderItem {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  variant   Variant? @relation(fields: [variantId], references: [id])
+  variantId String?
+  quantity  Int
+  price     Decimal  @db.Decimal(10,2) // Price at time of order
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ShippingInfo model
+model ShippingInfo {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+  address   String
+  city      String
+  state     String?
+  postal    String
+  country   String   @default("SG")
+  carrier   String?
+  tracking  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([orderId])
+}
+
+// Payment model (OxPay integration)
+model Payment {
+  id             String        @id @default(cuid())
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId        String        @unique
+  provider       String        @default("oxpay")
+  providerRef    String?       // OxPay transaction id
+  status         PaymentStatus @default(INITIATED)
+  amount         Decimal       @db.Decimal(10,2)
+  currency       String        @default("SGD")
+  rawPayload     Json?         // Store raw webhook payload for audit
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([providerRef])
+  @@index([status])
+}
