@@ -172,7 +172,7 @@ export default function EditProductPage() {
       router.push('/seller/login');
       return;
     }
-    if (status === 'authenticated' && session?.user?.role !== 'SELLER') {
+    if (status === 'authenticated' && session?.user?.role !== 'SELLER' && session?.user?.role !== 'ADMIN') {
       router.push('/seller/login?error=unauthorized');
       return;
     }
@@ -339,7 +339,7 @@ Current CORS Configuration:
     );
   }
 
-  if (status === 'unauthenticated' || session?.user?.role !== 'SELLER') {
+  if (status === 'unauthenticated' || (session?.user?.role !== 'SELLER' && session?.user?.role !== 'ADMIN')) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Redirecting...</div>

@@ -23,10 +23,47 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
-    // Get seller profile
-    const sellerProfile = await prisma.sellerProfile.findUnique({
+    // Get seller profile (or allow admin to access all products)
+    let sellerProfile = await prisma.sellerProfile.findUnique({
       where: { userId: user.id },
     });
+
+    // For admin users, allow access to all products (no seller profile needed)
+    if (user.role === 'ADMIN' && !sellerProfile) {
+      const [products, total] = await Promise.all([
+        prisma.product.findMany({
+          skip,
+          take: limit,
+          include: {
+            seller: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            category: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.product.count(),
+      ]);
+
+      return NextResponse.json({
+        products,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+        message: "Admin access: Showing all products",
+      });
+    }
 
     if (!sellerProfile) {
       // Return empty products array instead of 404

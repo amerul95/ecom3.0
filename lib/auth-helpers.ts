@@ -43,8 +43,13 @@ export async function requireRole(roles: Role | Role[]): Promise<AuthUser> {
   return user;
 }
 
+/**
+ * @deprecated Use requireAdmin() instead. Seller role is no longer used.
+ * Products are now managed by ADMIN only.
+ */
 export async function requireSeller(): Promise<AuthUser> {
-  return requireRole(Role.SELLER);
+  // Redirect to requireAdmin - seller functionality moved to admin
+  return requireAdmin();
 }
 
 export async function requireAdmin(): Promise<AuthUser> {
@@ -52,28 +57,23 @@ export async function requireAdmin(): Promise<AuthUser> {
 }
 
 export async function requireBuyer(): Promise<AuthUser> {
+  const user = await requireAuth();
+  // Allow ADMIN to access buyer APIs (full access)
+  if (user.role === Role.ADMIN) {
+    return user;
+  }
   return requireRole(Role.BUYER);
 }
 
 /**
- * Check if user can manage a product (seller owns it or is admin)
+ * Check if user can manage a product (admin only)
  */
 export async function canManageProduct(productId: string, userId: string): Promise<boolean> {
   const user = await getCurrentUser();
   if (!user) return false;
   
-  // Admins can manage any product
-  if (user.role === Role.ADMIN) return true;
-  
-  // Sellers can manage their own products
-  if (user.role === Role.SELLER) {
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      select: { sellerId: true, seller: { select: { userId: true } } },
-    });
-    return product?.seller.userId === userId;
-  }
-  return false;
+  // Only admins can manage products
+  return user.role === Role.ADMIN;
 }
 
 /**

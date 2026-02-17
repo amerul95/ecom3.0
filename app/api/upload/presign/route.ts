@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-helpers";
-import { getPresignedPostUrl, getS3PublicUrl } from "@/lib/s3";
+import { getPresignedPostUrl, getStoragePublicUrlSync } from "@/lib/storage";
 import { uploadSchema } from "@/lib/validations";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
-// POST /api/upload/presign - Get presigned URL for S3 upload
+// POST /api/upload/presign - Get upload URL for Supabase Storage
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(); // Must be authenticated
@@ -17,14 +17,23 @@ export async function POST(request: NextRequest) {
     const extension = filename.split(".").pop() || "jpg";
     const key = `uploads/${user.id}/${randomUUID()}.${extension}`;
 
-    const presignedUrl = await getPresignedPostUrl(key, contentType);
-    const publicUrl = getS3PublicUrl(key);
+    // For Supabase Storage, we return the upload endpoint URL
+    // The client should use Supabase client SDK to upload directly
+    const uploadUrl = await getPresignedPostUrl(key, contentType);
+    const publicUrl = getStoragePublicUrlSync(key);
 
+    // Determine upload method based on API type
+    const useS3API = !!(process.env.SUPABASE_S3_ACCESS_KEY_ID && process.env.SUPABASE_S3_SECRET_ACCESS_KEY);
+    
     return NextResponse.json({
-      presignedUrl,
+      presignedUrl: uploadUrl,
       key,
       publicUrl,
-      method: "PUT",
+      method: useS3API ? "PUT" : "POST", // S3 uses PUT, Supabase native uses POST
+      // Storage configuration info
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      bucket: process.env.SUPABASE_STORAGE_BUCKET || "uploads",
+      apiType: useS3API ? "s3-compatible" : "supabase-native",
     });
   } catch (error: any) {
     if (error.message === "Unauthorized") {

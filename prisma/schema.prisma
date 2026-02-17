@@ -5,14 +5,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // Enums
 enum Role {
   BUYER
-  SELLER
   ADMIN
 }
 
@@ -73,7 +73,8 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// User model (unified for all roles: BUYER, SELLER, ADMIN)
+// User model (unified for all roles: BUYER, ADMIN)
+// ADMIN users can manage products (single seller model)
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -82,12 +83,14 @@ model User {
   password      String?   // Hashed password for credentials provider
   image         String?
   role          Role      @default(BUYER)
+  storeName     String?   // Store name for ADMIN users (single seller)
+  verified      Boolean   @default(true) // Admin is always verified
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   accounts        Account[]
   sessions        Session[]
-  sellerProfile   SellerProfile?
+  products        Product[] @relation("ProductSeller") // Products managed by ADMIN users
   orders          Order[]
   reviews         Review[]
   addresses       Address[]
@@ -95,23 +98,6 @@ model User {
 
   @@index([email])
   @@index([role])
-}
-
-// SellerProfile model (linked to User with role SELLER)
-model SellerProfile {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String   @unique
-  storeName  String
-  verified   Boolean  @default(false)
-  kycDocsUrl String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  products   Product[]
-
-  @@index([userId])
-  @@index([verified])
 }
 
 // Category model (supports parent/child hierarchy)
@@ -130,10 +116,10 @@ model Category {
   @@index([parentId])
 }
 
-// Product model (replaces Item)
+// Product model (managed by ADMIN users - single seller model)
 model Product {
   id          String    @id @default(cuid())
-  seller      SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  seller      User      @relation("ProductSeller", fields: [sellerId], references: [id], onDelete: Cascade)
   sellerId    String
   name        String
   slug        String    @unique

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { testS3Connection } from "@/lib/s3";
+import { testStorageConnection } from "@/lib/storage";
 
-// GET /api/test/s3 - Test S3 connection (for diagnostics)
+// GET /api/test/s3 - Test Supabase Storage connection (for diagnostics)
+// Note: Route name kept as /s3 for backward compatibility
 export async function GET(request: NextRequest) {
   try {
-    const result = await testS3Connection();
+    const result = await testStorageConnection();
     
     if (result.success) {
       return NextResponse.json(result, { status: 200 });
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Unexpected error testing S3 connection",
+        message: "Unexpected error testing storage connection",
         error: error.message,
       },
       { status: 500 }

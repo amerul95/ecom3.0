@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { supabaseClient } from '@/lib/storage';
 import Sidebar from '../../../components/Sidebar';
 
 interface FormData {
@@ -41,7 +42,7 @@ export default function AddItemPage() {
       router.push('/seller/login');
       return;
     }
-    if (status === 'authenticated' && session?.user?.role !== 'SELLER') {
+    if (status === 'authenticated' && session?.user?.role !== 'SELLER' && session?.user?.role !== 'ADMIN') {
       router.push('/seller/login?error=unauthorized');
       return;
     }
@@ -55,7 +56,7 @@ export default function AddItemPage() {
     );
   }
 
-  if (status === 'unauthenticated' || session?.user?.role !== 'SELLER') {
+  if (status === 'unauthenticated' || (session?.user?.role !== 'SELLER' && session?.user?.role !== 'ADMIN')) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Redirecting...</div>
@@ -102,9 +103,9 @@ export default function AddItemPage() {
     }));
   };
 
-  const uploadImagesToS3 = async (files: File[]): Promise<string[]> => {
+  const uploadImagesToStorage = async (files: File[]): Promise<string[]> => {
     const uploadedUrls: string[] = [];
-    const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME || 'ecommv'; // Fallback for display
+    const bucketName = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'uploads';
 
     for (const file of files) {
       try {
@@ -116,7 +117,7 @@ export default function AddItemPage() {
           throw new Error(`${file.name} is not an image file`);
         }
 
-        // Get presigned URL
+        // Get upload key from API
         const presignResponse = await fetch('/api/upload/presign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -129,97 +130,78 @@ export default function AddItemPage() {
 
         if (!presignResponse.ok) {
           const errorData = await presignResponse.json().catch(() => ({}));
-          const errorMessage = errorData.error || `Failed to get presigned URL: ${presignResponse.status}`;
+          const errorMessage = errorData.error || `Failed to get upload URL: ${presignResponse.status}`;
           console.error('Presign error:', errorMessage, errorData);
           throw new Error(errorMessage);
         }
 
-        const { presignedUrl, publicUrl } = await presignResponse.json();
+        const { presignedUrl, key, publicUrl, method, apiType } = await presignResponse.json();
 
-        if (!presignedUrl || !publicUrl) {
+        if (!key) {
           throw new Error('Invalid response from presign API');
         }
 
-        // Upload to S3 using PUT method
-        // The presigned URL signature includes Content-Type, so we must match it exactly
-        try {
-          // Log the upload attempt for debugging
-          console.log('Attempting S3 upload:', {
+        // Check if using S3-compatible API or Supabase native API
+        const useS3API = apiType === 's3-compatible' || method === 'PUT';
+
+        if (useS3API && presignedUrl) {
+          // Use S3-compatible API with presigned URL (PUT method)
+          console.log('Attempting S3-compatible upload:', {
             fileName: file.name,
             fileSize: file.size,
             contentType: contentType,
-            presignedUrlPreview: presignedUrl.substring(0, 100) + '...',
+            key: key,
           });
 
           const uploadResponse = await fetch(presignedUrl, {
             method: 'PUT',
             body: file,
             headers: {
-              'Content-Type': contentType, // Must match the contentType used to generate the presigned URL
+              'Content-Type': contentType,
             },
-            mode: 'cors', // Explicitly set CORS mode
-            cache: 'no-cache', // Don't cache the request
           });
 
           if (!uploadResponse.ok) {
             const errorText = await uploadResponse.text().catch(() => 'Unknown error');
-            console.error('S3 upload error details:', {
+            console.error('S3-compatible upload error:', {
               status: uploadResponse.status,
               statusText: uploadResponse.statusText,
               error: errorText,
-              fileName: file.name,
-              fileSize: file.size,
-              contentType: contentType,
             });
-            
-            // Provide more helpful error messages
-            if (uploadResponse.status === 403) {
-              throw new Error(`Access denied (403). Your S3 bucket CORS configuration is missing or incorrect. Please configure CORS on your S3 bucket.`);
-            } else if (uploadResponse.status === 400) {
-              throw new Error(`Bad request (400). The file may be corrupted or too large.`);
-            } else {
-              throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
-            }
+            throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
           }
 
           console.log('✅ Upload successful for:', file.name);
           uploadedUrls.push(publicUrl);
-        } catch (fetchError: any) {
-          // Handle network errors separately
-          console.error('Fetch error details:', {
-            name: fetchError.name,
-            message: fetchError.message,
-            stack: fetchError.stack?.substring(0, 200),
+        } else {
+          // Use Supabase native API
+          console.log('Attempting Supabase native upload:', {
+            fileName: file.name,
+            fileSize: file.size,
+            contentType: contentType,
+            key: key,
           });
 
-          if (fetchError.name === 'TypeError' || fetchError.message.includes('fetch')) {
-            // Get current origin for CORS configuration
-            const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-            const region = 'ap-southeast-1'; // Your bucket region
-            
-            const detailedError = `CORS Error: Unable to connect to S3.
+          const { data, error } = await supabaseClient().storage
+            .from(bucketName)
+            .upload(key, file, {
+              contentType: contentType,
+              upsert: true, // Allow overwriting existing files
+              cacheControl: '3600',
+            });
 
-Your S3 bucket CORS is configured. If you're still seeing this error:
-
-🔧 Troubleshooting:
-1. Wait 1-2 minutes after CORS changes (they take time to propagate)
-2. Hard refresh your browser (Ctrl+Shift+R or Cmd+Shift+R)
-3. Clear browser cache
-4. Check browser console for specific CORS error details
-
-Current CORS Configuration:
-- AllowedOrigins: http://localhost:3000, https://localhost:3000, http://127.0.0.1:3000
-- AllowedMethods: GET, PUT, POST, DELETE, HEAD
-- Bucket: ${bucketName}
-- Region: ${region}
-
-If the issue persists, check:
-- Your current URL matches one of the allowed origins
-- Browser DevTools Network tab for detailed error
-- S3 bucket CORS settings are saved correctly`;
-            throw new Error(detailedError);
+          if (error) {
+            console.error('Supabase upload error:', error);
+            throw new Error(`Upload failed: ${error.message}`);
           }
-          throw fetchError;
+
+          // Get the public URL
+          const { data: urlData } = supabaseClient().storage
+            .from(bucketName)
+            .getPublicUrl(data.path);
+
+          console.log('✅ Upload successful for:', file.name);
+          uploadedUrls.push(urlData.publicUrl);
         }
       } catch (err: any) {
         console.error('Image upload error:', err);
@@ -260,7 +242,7 @@ If the issue persists, check:
       // Upload images if any
       let imageUrls: string[] = [];
       if (imageFiles.length > 0) {
-        imageUrls = await uploadImagesToS3(imageFiles);
+        imageUrls = await uploadImagesToStorage(imageFiles);
       }
 
       // Create item

@@ -99,8 +99,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user, account }) {
+      // On sign-in, set user ID, email, and role
       if (user) {
         token.id = user.id;
+        token.email = user.email;
         // Get role from database for OAuth users
         if (account?.provider === "google") {
           // For Google OAuth, check if user exists, default to BUYER
@@ -112,12 +114,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.role = (user as any).role || "BUYER";
         }
       }
+      
+      // On subsequent requests, refresh role from database
+      // This handles cases where user ID might be stale after DB reset
+      if (token.id && token.email) {
+        try {
+          // Try to find user by ID first
+          let dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { id: true, role: true, email: true },
+          });
+          
+          // If user not found by ID (stale session after DB reset), try by email
+          if (!dbUser && token.email) {
+            dbUser = await prisma.user.findUnique({
+              where: { email: token.email as string },
+              select: { id: true, role: true, email: true },
+            });
+            
+            // Update token ID to match database if found by email
+            if (dbUser) {
+              token.id = dbUser.id;
+            }
+          }
+          
+          // Update role from database
+          if (dbUser) {
+            token.role = dbUser.role;
+          } else {
+            // User not found - invalidate token by clearing it
+            console.warn("User not found in database, invalidating token");
+            token.id = undefined;
+            token.email = undefined;
+            token.role = undefined;
+          }
+        } catch (error) {
+          console.error("Error refreshing user role in JWT:", error);
+          // Keep existing token values on error
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
         session.user.id = token.id as string;
-        (session.user as any).role = token.role as "BUYER" | "SELLER" | "ADMIN";
+        (session.user as any).role = token.role as "BUYER" | "ADMIN";
       }
       return session;
     },

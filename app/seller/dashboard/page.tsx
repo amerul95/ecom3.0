@@ -24,7 +24,7 @@ export default function SellerDashboard() {
     }
 
     // Redirect to login if user doesn't have SELLER role
-    if (status === 'authenticated' && session?.user?.role !== 'SELLER') {
+    if (status === 'authenticated' && session?.user?.role !== 'SELLER' && session?.user?.role !== 'ADMIN') {
       router.push('/seller/login?error=unauthorized');
       return;
     }
@@ -74,7 +74,7 @@ export default function SellerDashboard() {
   }
 
   // Show loading state while redirecting
-  if (status === 'unauthenticated' || session?.user?.role !== 'SELLER') {
+  if (status === 'unauthenticated' || (session?.user?.role !== 'SELLER' && session?.user?.role !== 'ADMIN')) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Redirecting...</div>

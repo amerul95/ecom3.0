@@ -6,76 +6,25 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // Create admin user
-  const adminPassword = await bcrypt.hash("admin123", 10);
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@example.com" },
-    update: {},
-    create: {
-      email: "admin@example.com",
-      name: "Admin User",
-      password: adminPassword,
+  // Delete all existing users (this will cascade delete related data)
+  console.log("🗑️  Deleting all existing users...");
+  await prisma.user.deleteMany({});
+  console.log("✅ Deleted all users");
+
+  // Create test user with ADMIN role (ADMIN can do everything BUYER can do)
+  const testPassword = await bcrypt.hash("Senario@123", 10);
+  const testUser = await prisma.user.create({
+    data: {
+      email: "test@test.com",
+      name: "Test User",
+      password: testPassword,
       role: Role.ADMIN,
+      storeName: "Test Store",
+      verified: true,
       emailVerified: new Date(),
     },
   });
-  console.log("✅ Created admin user:", admin.email);
-
-  // Create buyer user
-  const buyerPassword = await bcrypt.hash("buyer123", 10);
-  const buyer = await prisma.user.upsert({
-    where: { email: "buyer@example.com" },
-    update: {},
-    create: {
-      email: "buyer@example.com",
-      name: "Buyer User",
-      password: buyerPassword,
-      role: Role.BUYER,
-      emailVerified: new Date(),
-    },
-  });
-  console.log("✅ Created buyer user:", buyer.email);
-
-  // Create seller user with seller profile
-  const sellerPassword = await bcrypt.hash("seller123", 10);
-  const sellerUser = await prisma.user.upsert({
-    where: { email: "seller@example.com" },
-    update: {
-      role: Role.SELLER, // Ensure role is SELLER
-    },
-    create: {
-      email: "seller@example.com",
-      name: "Seller User",
-      password: sellerPassword,
-      role: Role.SELLER,
-      emailVerified: new Date(),
-      sellerProfile: {
-        create: {
-          storeName: "Premium Store",
-          verified: true,
-        },
-      },
-    },
-    include: {
-      sellerProfile: true,
-    },
-  });
-  console.log("✅ Created seller user:", sellerUser.email);
-
-  // Get or create seller profile
-  let sellerProfile = sellerUser.sellerProfile;
-  
-  if (!sellerProfile) {
-    // Profile doesn't exist, create it
-    sellerProfile = await prisma.sellerProfile.create({
-      data: {
-        userId: sellerUser.id,
-        storeName: "Premium Store",
-        verified: true,
-      },
-    });
-    console.log("✅ Created seller profile for existing user");
-  }
+  console.log("✅ Created test user:", testUser.email, "with ADMIN role");
 
   // Create categories
   const electronicsCategory = await prisma.category.upsert({
@@ -116,7 +65,7 @@ async function main() {
       price: 29.99,
       stock: 50,
       images: [],
-      sellerId: sellerProfile.id,
+      sellerId: testUser.id,
       categoryId: accessoriesCategory.id,
     },
     {
@@ -126,7 +75,7 @@ async function main() {
       price: 24.99,
       stock: 100,
       images: [],
-      sellerId: sellerProfile.id,
+      sellerId: testUser.id,
       categoryId: apparelCategory.id,
     },
     {
@@ -136,7 +85,7 @@ async function main() {
       price: 149.99,
       stock: 30,
       images: [],
-      sellerId: sellerProfile.id,
+      sellerId: testUser.id,
       categoryId: electronicsCategory.id,
     },
     {
@@ -146,7 +95,7 @@ async function main() {
       price: 49.99,
       stock: 75,
       images: [],
-      sellerId: sellerProfile.id,
+      sellerId: testUser.id,
       categoryId: accessoriesCategory.id,
     },
   ];

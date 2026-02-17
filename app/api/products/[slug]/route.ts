@@ -14,14 +14,11 @@ export async function GET(
       include: {
         category: true,
         seller: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            storeName: true,
           },
         },
         variants: true,
@@ -65,18 +62,17 @@ export async function GET(
       where: {
         categoryId: product.categoryId,
         id: { not: product.id },
-        seller: { verified: true },
+        seller: { verified: true, role: 'ADMIN' },
       },
       take: 4,
       include: {
         category: true,
         seller: {
-          include: {
-            user: {
-              select: {
-                name: true,
-              },
-            },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            storeName: true,
           },
         },
         reviews: {
