@@ -25,6 +25,7 @@ export const productSchema = z.object({
   description: z.string().min(10),
   price: z.number().positive().or(z.string().regex(/^\d+(\.\d{1,2})?$/).transform(Number)),
   stock: z.number().int().nonnegative(),
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional().default("ACTIVE"),
   categoryId: z.string().cuid().optional().nullable(),
   images: z.array(z.string()).min(1, "At least one image is required"),
   variants: z.array(z.object({

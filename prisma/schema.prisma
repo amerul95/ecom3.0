@@ -34,6 +34,16 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum PurchaseItemStatus {
+  PENDING
+  POSTOUT
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
 // Auth.js v5 tables
 model Account {
   id                String  @id @default(cuid())
@@ -74,7 +84,7 @@ model VerificationToken {
 }
 
 // User model (unified for all roles: BUYER, ADMIN)
-// ADMIN users can manage products (single seller model)
+// Users can have multiple roles via UserRole relation
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -82,7 +92,8 @@ model User {
   emailVerified DateTime?
   password      String?   // Hashed password for credentials provider
   image         String?
-  role          Role      @default(BUYER)
+  role          Role      @default(BUYER) // Primary role for backward compatibility
+  roles         UserRole[] // Multiple roles support
   storeName     String?   // Store name for ADMIN users (single seller)
   verified      Boolean   @default(true) // Admin is always verified
   createdAt     DateTime  @default(now())
@@ -97,6 +108,19 @@ model User {
   cartItems       CartItem[]
 
   @@index([email])
+  @@index([role])
+}
+
+// UserRole model - allows users to have multiple roles
+model UserRole {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      Role
+  createdAt DateTime @default(now())
+
+  @@unique([userId, role])
+  @@index([userId])
   @@index([role])
 }
 
@@ -118,27 +142,29 @@ model Category {
 
 // Product model (managed by ADMIN users - single seller model)
 model Product {
-  id          String    @id @default(cuid())
-  seller      User      @relation("ProductSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  seller      User          @relation("ProductSeller", fields: [sellerId], references: [id], onDelete: Cascade)
   sellerId    String
   name        String
-  slug        String    @unique
-  description String    @db.Text
-  price       Decimal   @db.Decimal(10,2)
-  stock       Int       @default(0)
+  slug        String        @unique
+  description String        @db.Text
+  price       Decimal       @db.Decimal(10,2)
+  stock       Int           @default(0)
+  status      ProductStatus @default(ACTIVE)
   images      String[]
-  category    Category? @relation(fields: [categoryId], references: [id])
+  category    Category?     @relation(fields: [categoryId], references: [id])
   categoryId  String?
   variants    Variant[]
   reviews     Review[]
   orderItems  OrderItem[]
   cartItems   CartItem[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([sellerId])
   @@index([categoryId])
   @@index([slug])
+  @@index([status])
   @@index([createdAt])
 }
 
@@ -244,9 +270,24 @@ model OrderItem {
   variantId String?
   quantity  Int
   price     Decimal  @db.Decimal(10,2) // Price at time of order
+  purchaseItem PurchaseItem? // Link to purchase tracking
 
   @@index([orderId])
   @@index([productId])
+}
+
+// PurchaseItem model - tracks item status for backoffice
+model PurchaseItem {
+  id            String            @id @default(cuid())
+  orderItem     OrderItem         @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  orderItemId   String            @unique
+  status        PurchaseItemStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([orderItemId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ShippingInfo model

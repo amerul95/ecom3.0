@@ -32,16 +32,23 @@ export async function GET(request: NextRequest) {
     if (!reference) {
       console.error("❌ [RETURN v2] Missing reference in return URL");
       return NextResponse.redirect(
-        new URL("/checkout?error=missing_reference", baseUrl)
+        new URL("/checkout?error=missing_reference&message=Payment+reference+missing", baseUrl)
       );
+    }
+
+    const isFailed = status && ["failed", "cancelled", "canceled"].includes(status.toLowerCase());
+    if (isFailed) {
+      console.log("⚠️ [RETURN v2] Payment failed or cancelled:", status);
     }
 
     console.log("✅ [RETURN v2] Reference found:", reference);
     console.log("🔄 [RETURN v2] Payment status from OxPay:", status);
 
-    // Redirect to receipt page with reference
-    // The receipt page will query the payment status from the database
-    const receiptUrl = `/checkout/receipt?ref=${encodeURIComponent(reference)}`;
+    const params = new URLSearchParams({ ref: reference });
+    if (status && (status.toLowerCase() === "failed" || status.toLowerCase() === "cancelled" || status.toLowerCase() === "canceled")) {
+      params.set("status", status.toLowerCase() === "canceled" ? "cancelled" : status.toLowerCase());
+    }
+    const receiptUrl = `/checkout/receipt?${params.toString()}`;
     console.log("🔄 [RETURN v2] Redirecting to receipt page:", receiptUrl);
 
     return NextResponse.redirect(new URL(receiptUrl, baseUrl));

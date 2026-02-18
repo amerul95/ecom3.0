@@ -115,9 +115,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
       
-      // On subsequent requests, refresh role from database
-      // This handles cases where user ID might be stale after DB reset
-      if (token.id && token.email) {
+      // On subsequent requests, refresh role from database (Node.js only; Prisma doesn't run on Edge)
+      // Middleware runs on Edge, so skip DB refresh there and use existing token role
+      const isEdge = process.env.NEXT_RUNTIME === "edge";
+      if (!isEdge && token.id && token.email) {
         try {
           // Try to find user by ID first
           let dbUser = await prisma.user.findUnique({

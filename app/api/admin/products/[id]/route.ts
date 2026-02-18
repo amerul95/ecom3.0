@@ -144,6 +144,9 @@ export async function PATCH(
     if (validated.categoryId !== undefined) {
       updateData.categoryId = validated.categoryId || null;
     }
+    if (validated.status !== undefined) {
+      updateData.status = validated.status;
+    }
 
     const variantPayload = Array.isArray(validated.variants)
       ? validated.variants

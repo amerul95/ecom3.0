@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import bbm_logo from '../../Assets/BBM_ECOMM.png';
+import bbm_logo from '../../../Assets/BBM_ECOMM.png';
 import type { StaticImageData } from 'next/image';
 
 interface FormData {

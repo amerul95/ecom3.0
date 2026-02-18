@@ -6,6 +6,9 @@ import {
   IconFolder,
   IconInnerShadowTop,
   IconCirclePlusFilled,
+  IconShoppingCart,
+  IconUserCircle,
+  IconReceipt,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -52,6 +55,16 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       title: "Add New Product",
       url: "/admin/products/new",
       icon: IconCirclePlusFilled,
+    },
+    {
+      title: "Orders",
+      url: "/admin/orders",
+      icon: IconReceipt,
+    },
+    {
+      title: "Users",
+      url: "/admin/users",
+      icon: IconUserCircle,
     },
   ];
 

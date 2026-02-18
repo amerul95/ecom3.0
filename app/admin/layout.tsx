@@ -1,57 +1,51 @@
-'use client';
-
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
+import { ThemeProvider } from "@/components/theme-provider";
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const session = await auth();
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-    if (status === 'authenticated' && (session?.user as { role?: string })?.role !== 'ADMIN') {
-      router.push('/login?error=unauthorized');
-    }
-  }, [status, session, router]);
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-  if (status === 'loading' || status === 'unauthenticated' || (status === 'authenticated' && (session?.user as { role?: string })?.role !== 'ADMIN')) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-lg text-foreground">Loading...</div>
-      </div>
-    );
+  if ((session.user as { role?: string })?.role !== "ADMIN") {
+    redirect("/login?error=unauthorized");
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
     >
-      <AppSidebar variant="inset" user={session?.user} />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col bg-background min-h-full">
-          {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" user={session.user} />
+        <SidebarInset>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col bg-background min-h-full">
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </ThemeProvider>
   );
 }

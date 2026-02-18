@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Figtree } from 'next/font/google';
-import { Providers } from './lib/provider';
+import { Providers } from '@/lib/provider';
+import { NavbarWrapper } from '@/components/navbar/NavbarWrapper';
+import { FooterWrapper } from '@/components/footer/FooterWrapper';
 import './globals.css';
 
 const figtree = Figtree({
@@ -24,10 +26,11 @@ export default function RootLayout({
     <html lang="en" className={figtree.variable} suppressHydrationWarning>
       <body className={figtree.className}>
         <Providers>
+          <NavbarWrapper />
           {children}
+          <FooterWrapper />
         </Providers>
       </body>
     </html>
   );
 }
-

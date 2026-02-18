@@ -14,6 +14,8 @@ const createOrderSchema = z.object({
     postal: z.string().min(4, "Postal code must be at least 4 characters"),
     country: z.string().length(2, "Country must be a 2-letter code").default(DEFAULT_COUNTRY),
   }).optional(),
+  shippingMethod: z.string().optional(),
+  shippingCost: z.number().min(0).optional(),
   paymentMethod: z.string().optional(),
   voucherCode: z.string().optional(),
 });
@@ -129,6 +131,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const shippingCost = validated.shippingCost ?? 0;
+    total += shippingCost;
+
     // Get shipping address
     let shippingData;
     if (validated.shippingAddressId) {
@@ -144,17 +149,19 @@ export async function POST(request: NextRequest) {
         state: address.state,
         postal: address.postal,
         country: address.country,
+        carrier: validated.shippingMethod || null,
       };
     } else if (validated.shippingInfo) {
       // Clean up shipping data - convert empty strings to null for optional fields
       shippingData = {
         address: validated.shippingInfo.address,
         city: validated.shippingInfo.city,
-        state: validated.shippingInfo.state && validated.shippingInfo.state.trim() !== "" 
-          ? validated.shippingInfo.state 
+        state: validated.shippingInfo.state && validated.shippingInfo.state.trim() !== ""
+          ? validated.shippingInfo.state
           : null,
         postal: validated.shippingInfo.postal,
         country: validated.shippingInfo.country || DEFAULT_COUNTRY,
+        carrier: validated.shippingMethod || null,
       };
     } else {
       throw new ValidationError("Shipping information is required. Provide either shippingAddressId or shippingInfo.");

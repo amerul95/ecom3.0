@@ -7,6 +7,11 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axios from 'axios';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 // Input schema for form (strings before transformation)
 const productFormInputSchema = z.object({
@@ -374,16 +379,16 @@ export default function NewProductPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   if (status === 'unauthenticated' || session?.user?.role !== 'ADMIN') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Redirecting...</div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Redirecting...</p>
       </div>
     );
   }
@@ -393,386 +398,375 @@ export default function NewProductPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto p-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Product</h1>
-            <p className="text-gray-600">Fill in the details to create a new product listing</p>
-            
-            <div className="mt-4 flex gap-4">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="uploadMode"
-                  value="single"
-                  checked={uploadMode === 'single'}
-                  onChange={(e) => setUploadMode(e.target.value as UploadMode)}
-                  className="mr-2"
-                />
-                <span className="text-sm font-medium text-gray-700">Single Product</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="uploadMode"
-                  value="multiple"
-                  checked={uploadMode === 'multiple'}
-                  onChange={(e) => setUploadMode(e.target.value as UploadMode)}
-                  className="mr-2"
-                />
-                <span className="text-sm font-medium text-gray-700">Multiple Products</span>
-              </label>
-            </div>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">{error}</p>
-            </div>
-          )}
-
-          {uploadMode === 'single' ? (
-            <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Product Name *
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  {...register('name')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Enter product name"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
-              </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                Description *
-              </label>
-              <textarea
-                id="description"
-                {...register('description')}
-                rows={5}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Describe your product in detail"
-              />
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                  Price (SGD) *
-                </label>
-                <input
-                  id="price"
-                  type="text"
-                  {...register('price')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="0.00"
-                />
-                {errors.price && (
-                  <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-2">
-                  Stock Quantity *
-                </label>
-                <input
-                  id="stock"
-                  type="text"
-                  {...register('stock')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="0"
-                />
-                {errors.stock && (
-                  <p className="mt-1 text-sm text-red-600">{errors.stock.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-2">
-                Category
-              </label>
-              <select
-                id="categoryId"
-                {...register('categoryId')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">Select a category (optional)</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product Images * (1 main image required, up to 4 total)
-              </label>
-              <p className="text-xs text-gray-500 mb-2">
-                First image will be used as main image in product listings.
-              </p>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">Add new product</h1>
+          <p className="text-muted-foreground">Fill in the details to create a new product listing.</p>
+          <div className="mt-4 flex gap-4">
+            <label className="flex items-center cursor-pointer gap-2">
               <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageSelect}
-                disabled={uploading || currentImages.length >= 4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                type="radio"
+                name="uploadMode"
+                value="single"
+                checked={uploadMode === 'single'}
+                onChange={(e) => setUploadMode(e.target.value as UploadMode)}
+                className="border-input accent-primary"
               />
-              {currentImages.length >= 4 && (
-                <p className="mt-1 text-sm text-yellow-600">Maximum 4 images reached.</p>
-              )}
-              {errors.images && (
-                <p className="mt-1 text-sm text-red-600">{errors.images.message}</p>
-              )}
-              
-              {currentImages.length > 0 && (
-                <div className="mt-4">
+              <span className="text-sm font-medium">Single product</span>
+            </label>
+            <label className="flex items-center cursor-pointer gap-2">
+              <input
+                type="radio"
+                name="uploadMode"
+                value="multiple"
+                checked={uploadMode === 'multiple'}
+                onChange={(e) => setUploadMode(e.target.value as UploadMode)}
+                className="border-input accent-primary"
+              />
+              <span className="text-sm font-medium">Multiple products</span>
+            </label>
+          </div>
+        </div>
+
+        {error && (
+          <Card className="mb-6 border-destructive/50 bg-destructive/5">
+            <CardContent className="pt-6">
+              <p className="text-sm text-destructive whitespace-pre-line">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {uploadMode === 'single' ? (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic details</CardTitle>
+                <CardDescription>Name, description, price, and stock.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Product name *</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    {...register('name')}
+                    placeholder="Enter product name"
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-destructive">{errors.name.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description *</Label>
+                  <textarea
+                    id="description"
+                    {...register('description')}
+                    rows={5}
+                    className={cn(
+                      "flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+                    )}
+                    placeholder="Describe your product in detail"
+                  />
+                  {errors.description && (
+                    <p className="text-sm text-destructive">{errors.description.message}</p>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price (SGD) *</Label>
+                    <Input
+                      id="price"
+                      type="text"
+                      {...register('price')}
+                      placeholder="0.00"
+                    />
+                    {errors.price && (
+                      <p className="text-sm text-destructive">{errors.price.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stock">Stock quantity *</Label>
+                    <Input
+                      id="stock"
+                      type="text"
+                      {...register('stock')}
+                      placeholder="0"
+                    />
+                    {errors.stock && (
+                      <p className="text-sm text-destructive">{errors.stock.message}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="categoryId">Category</Label>
+                  <select
+                    id="categoryId"
+                    {...register('categoryId')}
+                    className={cn(
+                      "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+                    )}
+                  >
+                    <option value="">Select a category (optional)</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Images</CardTitle>
+                <CardDescription>Main image required, up to 4 total. First image is main.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Product images *</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageSelect}
+                    disabled={uploading || currentImages.length >= 4}
+                    className="cursor-pointer"
+                  />
+                  {currentImages.length >= 4 && (
+                    <p className="text-sm text-muted-foreground">Maximum 4 images. Remove one to add more.</p>
+                  )}
+                  {errors.images && (
+                    <p className="text-sm text-destructive">{errors.images.message}</p>
+                  )}
+                </div>
+                {currentImages.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {currentImages.map((imageUrl, index) => (
-                      <div key={index} className="relative group">
-                        <div className="relative">
-                          <img
-                            src={imageUrl}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-300"
-                          />
-                          {index === 0 && (
-                            <div className="absolute top-2 left-2 bg-indigo-600 text-white text-xs font-semibold px-2 py-1 rounded">
-                              Main Image
-                            </div>
-                          )}
-                          <div className="absolute top-2 right-2 bg-gray-800 bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                            {index + 1} / {currentImages.length}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute bottom-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                            title="Remove image"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                          {index > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => moveImage(index, 0)}
-                              className="absolute bottom-2 left-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                              title="Set as main image"
-                            >
-                              Set Main
-                            </button>
-                          )}
-                          {uploadProgress[index] !== undefined && uploadProgress[index] < 100 && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-90 rounded-b-lg h-2">
-                              <div
-                                className="bg-indigo-500 h-2 rounded-b-lg transition-all"
-                                style={{ width: `${uploadProgress[index]}%` }}
-                              />
-                            </div>
-                          )}
+                      <div key={index} className="relative group rounded-lg border overflow-hidden">
+                        <img
+                          src={imageUrl}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover"
+                        />
+                        {index === 0 && (
+                          <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-medium px-2 py-0.5 rounded">
+                            Main
+                          </span>
+                        )}
+                        <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+                          {index + 1} / {currentImages.length}
                         </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute bottom-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100"
+                          onClick={() => removeImage(index)}
+                          title="Remove image"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </Button>
+                        {index > 0 && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="absolute bottom-2 left-2 text-xs opacity-0 group-hover:opacity-100"
+                            onClick={() => moveImage(index, 0)}
+                            title="Set as main image"
+                          >
+                            Set main
+                          </Button>
+                        )}
+                        {uploadProgress[index] !== undefined && uploadProgress[index] < 100 && (
+                          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-muted">
+                            <div
+                              className="h-full bg-primary transition-all"
+                              style={{ width: `${uploadProgress[index]}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
 
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Product Variants (Optional)
-                </label>
-                <button
-                  type="button"
-                  onClick={() => append({ name: '', sku: '', price: '', stock: '' })}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-                >
-                  Add Variant
-                </button>
-              </div>
-
-              {fields.map((field, index) => (
-                <div key={field.id} className="mb-4 p-4 border border-gray-200 rounded-lg space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-medium text-gray-700">Variant {index + 1}</h4>
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="text-red-600 hover:text-red-700 text-sm"
-                    >
-                      Remove
-                    </button>
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Variants</CardTitle>
+                    <CardDescription>Optional size/color or other options.</CardDescription>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Name</label>
-                      <input
-                        {...register(`variants.${index}.name`)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="e.g., Color: Red, Size: M"
-                      />
-                      {errors.variants?.[index]?.name && (
-                        <p className="mt-1 text-xs text-red-600">{errors.variants[index]?.name?.message}</p>
-                      )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ name: '', sku: '', price: '', stock: '' })}
+                  >
+                    Add variant
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {fields.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No variants. Add variants for options like size or color.</p>
+                )}
+                {fields.map((field, index) => (
+                  <div key={field.id} className="p-4 border rounded-lg space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-sm">Variant {index + 1}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => remove(index)}
+                      >
+                        Remove
+                      </Button>
                     </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">SKU</label>
-                      <input
-                        {...register(`variants.${index}.sku`)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="Unique SKU"
-                      />
-                      {errors.variants?.[index]?.sku && (
-                        <p className="mt-1 text-xs text-red-600">{errors.variants[index]?.sku?.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Price (optional)</label>
-                      <input
-                        {...register(`variants.${index}.price`)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="Override price"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Stock</label>
-                      <input
-                        {...register(`variants.${index}.stock`)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="0"
-                      />
-                      {errors.variants?.[index]?.stock && (
-                        <p className="mt-1 text-xs text-red-600">{errors.variants[index]?.stock?.message}</p>
-                      )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Name</Label>
+                        <Input
+                          {...register(`variants.${index}.name`)}
+                          placeholder="e.g. Size: M"
+                        />
+                        {errors.variants?.[index]?.name && (
+                          <p className="text-xs text-destructive">{errors.variants[index]?.name?.message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>SKU</Label>
+                        <Input
+                          {...register(`variants.${index}.sku`)}
+                          placeholder="Unique SKU"
+                        />
+                        {errors.variants?.[index]?.sku && (
+                          <p className="text-xs text-destructive">{errors.variants[index]?.sku?.message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Price (optional)</Label>
+                        <Input
+                          {...register(`variants.${index}.price`)}
+                          placeholder="Override price"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Stock</Label>
+                        <Input
+                          {...register(`variants.${index}.stock`)}
+                          placeholder="0"
+                        />
+                        {errors.variants?.[index]?.stock && (
+                          <p className="text-xs text-destructive">{errors.variants[index]?.stock?.message}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </CardContent>
+            </Card>
 
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
-              <button
+            <div className="flex gap-4 pt-4">
+              <Button
                 type="submit"
                 disabled={isSubmitting || uploading}
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
-                {isSubmitting ? 'Creating...' : 'Create Product'}
-              </button>
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
-              >
+                {isSubmitting ? 'Creating...' : 'Create product'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
           ) : (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Multiple Products</h2>
-                <button
-                  type="button"
-                  onClick={addProduct}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
-                >
-                  + Add Product
-                </button>
-              </div>
-
-              <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Multiple products</CardTitle>
+                    <CardDescription>Add several products at once.</CardDescription>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addProduct}>
+                    + Add product
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-8">
                 {multipleProducts.map((product, productIndex) => (
-                  <div key={productIndex} className="border border-gray-200 rounded-lg p-6 space-y-4">
-                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">Product {productIndex + 1}</h3>
+                  <div key={productIndex} className="rounded-lg border p-6 space-y-4">
+                    <div className="flex justify-between items-center pb-4 border-b">
+                      <h3 className="font-semibold">Product {productIndex + 1}</h3>
                       {multipleProducts.length > 1 && (
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive"
                           onClick={() => removeProduct(productIndex)}
-                          className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
                         >
                           Remove
-                        </button>
+                        </Button>
                       )}
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Product Name *
-                        </label>
-                        <input
+                      <div className="space-y-2">
+                        <Label>Product name *</Label>
+                        <Input
                           type="text"
                           value={product.name}
                           onChange={(e) => updateMultipleProduct(productIndex, 'name', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                           placeholder="Enter product name"
                         />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Description *
-                        </label>
+                      <div className="space-y-2">
+                        <Label>Description *</Label>
                         <textarea
                           value={product.description}
                           onChange={(e) => updateMultipleProduct(productIndex, 'description', e.target.value)}
                           rows={3}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          className={cn(
+                            "flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+                          )}
                           placeholder="Describe your product"
                         />
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Price (SGD) *
-                          </label>
-                          <input
+                        <div className="space-y-2">
+                          <Label>Price (SGD) *</Label>
+                          <Input
                             type="text"
                             value={product.price}
                             onChange={(e) => updateMultipleProduct(productIndex, 'price', e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                             placeholder="0.00"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Stock *
-                          </label>
-                          <input
+                        <div className="space-y-2">
+                          <Label>Stock *</Label>
+                          <Input
                             type="text"
                             value={product.stock}
                             onChange={(e) => updateMultipleProduct(productIndex, 'stock', e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                             placeholder="0"
                           />
                         </div>
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Category
-                        </label>
+                      <div className="space-y-2">
+                        <Label>Category</Label>
                         <select
                           value={product.categoryId}
                           onChange={(e) => updateMultipleProduct(productIndex, 'categoryId', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          className={cn(
+                            "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+                          )}
                         >
                           <option value="">Select a category (optional)</option>
                           {categories.map((category) => (
@@ -782,12 +776,9 @@ export default function NewProductPage() {
                           ))}
                         </select>
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Product Images * (1 main image required, up to 4 total)
-                        </label>
-                        <input
+                      <div className="space-y-2">
+                        <Label>Product images * (1 main, up to 4)</Label>
+                        <Input
                           type="file"
                           accept="image/*"
                           multiple
@@ -796,16 +787,13 @@ export default function NewProductPage() {
                               const files = Array.from(e.target.files);
                               const currentImages = product.images || [];
                               const remainingSlots = 4 - currentImages.length;
-                              
                               if (remainingSlots === 0) {
                                 setError('Maximum 4 images allowed.');
                                 e.target.value = '';
                                 return;
                               }
-
                               const filesToUpload = files.slice(0, remainingSlots);
                               const uploadedUrls: string[] = [];
-                              
                               for (let i = 0; i < filesToUpload.length; i++) {
                                 const file = filesToUpload[i];
                                 try {
@@ -815,83 +803,87 @@ export default function NewProductPage() {
                                   console.error('Image upload failed:', err);
                                 }
                               }
-                              
                               updateMultipleProduct(productIndex, 'images', [...currentImages, ...uploadedUrls]);
                               e.target.value = '';
                             }
                           }}
                           disabled={uploading || (product.images?.length || 0) >= 4}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          className="cursor-pointer"
                         />
                         {product.images && product.images.length > 0 && (
-                          <div className="mt-4">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              {product.images.map((imageUrl, imgIndex) => (
-                                <div key={imgIndex} className="relative group">
-                                  <img
-                                    src={imageUrl}
-                                    alt={`Product ${productIndex + 1} - Image ${imgIndex + 1}`}
-                                    className="w-full h-32 object-cover rounded-lg border-2 border-gray-300"
-                                  />
-                                  {imgIndex === 0 && (
-                                    <div className="absolute top-2 left-2 bg-indigo-600 text-white text-xs font-semibold px-2 py-1 rounded">
-                                      Main Image
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const updatedImages = product.images.filter((_, i) => i !== imgIndex);
-                                      updateMultipleProduct(productIndex, 'images', updatedImages);
-                                    }}
-                                    className="absolute bottom-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                    title="Remove image"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                            {product.images.map((imageUrl, imgIndex) => (
+                              <div key={imgIndex} className="relative group rounded-lg border overflow-hidden">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Product ${productIndex + 1} - Image ${imgIndex + 1}`}
+                                  className="w-full h-32 object-cover"
+                                />
+                                {imgIndex === 0 && (
+                                  <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-medium px-2 py-0.5 rounded">
+                                    Main
+                                  </span>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute bottom-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100"
+                                  onClick={() => {
+                                    const updatedImages = product.images.filter((_, i) => i !== imgIndex);
+                                    updateMultipleProduct(productIndex, 'images', updatedImages);
+                                  }}
+                                  title="Remove image"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </Button>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
 
-              {bulkStatus && (
-                <div
-                  className={`mt-6 rounded-lg border px-4 py-3 text-sm ${
-                    bulkStatus.type === 'success'
-                      ? 'border-green-200 bg-green-50 text-green-800'
-                      : 'border-red-200 bg-red-50 text-red-800'
-                  }`}
-                >
-                  {bulkStatus.text}
+                {bulkStatus && (
+                  <Card
+                    className={
+                      bulkStatus.type === 'success'
+                        ? 'border-green-500/50 bg-green-500/10'
+                        : 'border-destructive/50 bg-destructive/5'
+                    }
+                  >
+                    <CardContent className="pt-6">
+                      <p
+                        className={
+                          bulkStatus.type === 'success'
+                            ? 'text-sm text-green-700 dark:text-green-400'
+                            : 'text-sm text-destructive'
+                        }
+                      >
+                        {bulkStatus.text}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="button"
+                    onClick={onSubmitMultiple}
+                    disabled={bulkSubmitting || uploading}
+                  >
+                    {bulkSubmitting ? 'Creating...' : `Create ${multipleProducts.length} product(s)`}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => router.back()}>
+                    Cancel
+                  </Button>
                 </div>
-              )}
-
-              <div className="flex gap-4 pt-6 mt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={onSubmitMultiple}
-                  disabled={bulkSubmitting || uploading}
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {bulkSubmitting ? 'Uploading products...' : `Create ${multipleProducts.length} Product(s)`}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.back()}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
       </div>
     </div>

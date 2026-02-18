@@ -55,10 +55,12 @@ export async function GET(request: NextRequest) {
     const where: {
       categoryId?: string;
       sellerId?: string;
+      status?: "ACTIVE";
       price?: { gte?: number; lte?: number };
       OR?: Array<{ name?: { contains: string; mode: "insensitive" }; description?: { contains: string; mode: "insensitive" } }>;
       seller: { verified: boolean };
     } = {
+      status: "ACTIVE",
       seller: {
         verified: true,
       },

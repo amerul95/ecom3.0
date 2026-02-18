@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import bbm_logo from '../../Assets/BBM_ECOMM.png';
+import bbm_logo from '../../../Assets/BBM_ECOMM.png';
 import type { StaticImageData } from 'next/image';
 
 interface FormData {

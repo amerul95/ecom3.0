@@ -50,6 +50,13 @@ export async function GET(
       );
     }
 
+    if (product.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
     // Calculate average rating
     const avgRating =
       product.reviews.length > 0
@@ -62,6 +69,7 @@ export async function GET(
       where: {
         categoryId: product.categoryId,
         id: { not: product.id },
+        status: "ACTIVE",
         seller: { verified: true, role: 'ADMIN' },
       },
       take: 4,

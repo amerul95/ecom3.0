@@ -17,12 +17,13 @@ export async function GET(
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
+    const search = searchParams.get("search")?.trim() || undefined;
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    console.log('📋 Query params:', { page, limit, skip, minPrice, maxPrice, sortBy, sortOrder });
+    console.log('📋 Query params:', { page, limit, skip, search, minPrice, maxPrice, sortBy, sortOrder });
 
     const category = await prisma.category.findUnique({
       where: { slug },
@@ -60,9 +61,10 @@ export async function GET(
       );
     }
 
-    // Build product filter
+    // Build product filter (only active products for storefront)
     const productWhere: any = {
       categoryId: category.id,
+      status: "ACTIVE",
     };
 
     if (minPrice || maxPrice) {
@@ -73,6 +75,13 @@ export async function GET(
       if (maxPrice) {
         productWhere.price.lte = parseFloat(maxPrice);
       }
+    }
+
+    if (search) {
+      productWhere.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
     }
 
     // Only show products from verified sellers

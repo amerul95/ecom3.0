@@ -170,6 +170,7 @@ export async function POST(request: NextRequest) {
         description: validated.description,
         price: validated.price,
         stock: validated.stock,
+        status: validated.status ?? "ACTIVE",
         images: validated.images,
         categoryId: validated.categoryId || null,
         sellerId: dbUser.id,

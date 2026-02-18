@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import Link from 'next/link';
-import Navbar from '../../components/navbar/Navbar';
-import Footer from '../../components/footer/Footer';
 
 interface PaymentData {
   id: string;
@@ -44,6 +42,8 @@ function ReceiptContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const ref = searchParams.get('ref');
+  const returnStatus = searchParams.get('status');
+  const isReturnFailed = returnStatus === 'failed' || returnStatus === 'cancelled';
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -145,14 +145,12 @@ function ReceiptContent() {
   if (status === 'loading' || isLoading) {
     return (
       <>
-        <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
             <p className="mt-4 text-gray-600">Loading payment status...</p>
           </div>
         </div>
-        <Footer />
       </>
     );
   }
@@ -162,19 +160,34 @@ function ReceiptContent() {
   }
 
   if (error || !payment) {
+    const title = isReturnFailed
+      ? returnStatus === 'cancelled'
+        ? 'Payment cancelled'
+        : 'Payment failed'
+      : 'Payment Status Not Found';
+    const message = isReturnFailed
+      ? returnStatus === 'cancelled'
+        ? 'You cancelled the payment. Your order is still pending. You can try again from checkout.'
+        : 'The payment could not be completed. Your order is still pending. You can try again from checkout.'
+      : (error || 'Unable to retrieve payment information');
     return (
       <>
-        <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="text-center py-12">
               <div className="text-red-600 text-5xl mb-4">✕</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Status Not Found</h2>
-              <p className="text-gray-600 mb-6">{error || 'Unable to retrieve payment information'}</p>
-              <div className="flex gap-4 justify-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
+              <p className="text-gray-600 mb-6">{message}</p>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <Link
+                  href="/checkout"
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                >
+                  Try again
+                </Link>
                 <Link
                   href="/orders"
-                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
                 >
                   View Orders
                 </Link>
@@ -188,17 +201,16 @@ function ReceiptContent() {
             </div>
           </div>
         </div>
-        <Footer />
       </>
     );
   }
 
   const isSuccess = payment.status === 'CAPTURED' || payment.order.status === 'PAID';
+  const isFailed = payment.status === 'FAILED' || payment.status === 'CANCELLED';
 
   return (
-    <>
-      <Navbar />
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <>
+        <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           {/* Status Header */}
           <div className="text-center mb-8">
@@ -214,11 +226,16 @@ function ReceiptContent() {
               )}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {isSuccess ? 'Payment Successful!' : 'Payment Status'}
+              {isSuccess ? 'Payment Successful!' : isFailed ? (payment.status === 'CANCELLED' ? 'Payment cancelled' : 'Payment failed') : 'Payment Status'}
             </h1>
             <div className={`inline-block px-4 py-2 rounded-lg border ${getStatusColor(payment.status)}`}>
               <span className="font-semibold">{getStatusText(payment.status)}</span>
             </div>
+            {isFailed && (
+              <p className="mt-3 text-gray-600 text-sm max-w-md mx-auto">
+                Your order remains pending. You can try again from checkout or view your orders.
+              </p>
+            )}
           </div>
 
           {/* Payment Details */}
@@ -288,10 +305,18 @@ function ReceiptContent() {
 
           {/* Actions */}
           <div className="border-t border-gray-200 pt-6">
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {isFailed && (
+                <Link
+                  href="/checkout"
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                >
+                  Try payment again
+                </Link>
+              )}
               <Link
                 href="/orders"
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                className={`px-6 py-3 rounded-lg font-medium ${isFailed ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
               >
                 View All Orders
               </Link>
@@ -305,7 +330,6 @@ function ReceiptContent() {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }
@@ -314,14 +338,12 @@ export default function ReceiptPage() {
   return (
     <Suspense fallback={
       <>
-        <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
             <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </div>
-        <Footer />
       </>
     }>
       <ReceiptContent />
