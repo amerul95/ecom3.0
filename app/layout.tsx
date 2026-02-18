@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { Figtree } from 'next/font/google';
-import { Providers } from '@/lib/provider';
+import { Providers } from '@/provider/provider';
 import { NavbarWrapper } from '@/components/navbar/NavbarWrapper';
 import { FooterWrapper } from '@/components/footer/FooterWrapper';
 import './globals.css';
+import { SessionProvider } from "next-auth/react"
 
 const figtree = Figtree({
   subsets: ['latin'],

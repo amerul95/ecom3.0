@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth-helpers";
-import { productUpdateSchema } from "@/lib/validations";
+import { requireAdmin } from "@/server/policy/auth.policy";
+import { productUpdateSchema } from "@/server/dto/product.dto";
 import { z } from "zod";
 
 const paramsSchema = z.object({

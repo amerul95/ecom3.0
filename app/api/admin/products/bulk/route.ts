@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireSeller } from "@/lib/auth-helpers";
-import { productSchema } from "@/lib/validations";
+import { requireAdmin } from "@/server/policy/auth.policy";
+import { productSchema } from "@/server/dto/product.dto";
 import { z } from "zod";
 
 // Helper function to generate slug from name
@@ -18,34 +18,45 @@ const bulkProductSchema = z.object({
   products: z.array(productSchema).min(1, "At least one product is required").max(50, "Maximum 50 products per bulk upload"),
 });
 
-// POST /api/seller/products/bulk - Create multiple products
+// POST /api/admin/products/bulk - Create multiple products
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireSeller();
+    const user = await requireAdmin();
     const body = await request.json();
 
     // Validate bulk request
     const validated = bulkProductSchema.parse(body);
 
-    // Get or create seller profile
-    let sellerProfile = await prisma.sellerProfile.findUnique({
-      where: { userId: user.id },
+    // Ensure admin user exists and has storeName set
+    let dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { id: true, storeName: true, verified: true },
     });
 
-    if (!sellerProfile) {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { name: true, email: true },
+    // If user not found by ID, try by email (session might have stale ID after DB reset)
+    if (!dbUser && user.email) {
+      dbUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { id: true, storeName: true, verified: true },
       });
-      
-      sellerProfile = await prisma.sellerProfile.create({
+    }
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "User not found in database. Please log out and log back in." },
+        { status: 404 }
+      );
+    }
+
+    if (!dbUser.storeName) {
+      await prisma.user.update({
+        where: { id: dbUser.id },
         data: {
-          userId: user.id,
-          storeName: dbUser?.name ? `${dbUser.name}'s Store` : `Store ${dbUser?.email.split('@')[0] || 'Unknown'}`,
-          verified: false,
+          storeName: "Admin Store",
+          verified: true,
         },
       });
-      console.log("✅ Auto-created seller profile for user:", user.id);
+      console.log("✅ Updated admin user with store name:", dbUser.id);
     }
 
     // Create products in transaction
@@ -74,9 +85,10 @@ export async function POST(request: NextRequest) {
             description: productData.description,
             price: productData.price,
             stock: productData.stock,
+            status: productData.status ?? "ACTIVE",
             images: productData.images,
             categoryId: productData.categoryId || null,
-            sellerId: sellerProfile.id,
+            sellerId: dbUser.id,
             variants: productData.variants && productData.variants.length > 0
               ? {
                   create: productData.variants.map((v) => ({
@@ -92,13 +104,11 @@ export async function POST(request: NextRequest) {
             category: true,
             variants: true,
             seller: {
-              include: {
-                user: {
-                  select: {
-                    name: true,
-                    email: true,
-                  },
-                },
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                storeName: true,
               },
             },
           },
@@ -148,7 +158,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("POST /api/seller/products/bulk error:", error);
+    console.error("POST /api/admin/products/bulk error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",
@@ -158,11 +168,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-
-
-
-
-
-
-

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireBuyer } from "@/lib/auth-helpers";
+import { requireBuyer } from "@/server/policy/auth.policy";
 import { z } from "zod";
 import { errorToResponse, handleDatabaseError, ValidationError, NotFoundError } from "@/lib/errors";
 import { DEFAULT_COUNTRY, CURRENCY } from "@/types";
@@ -135,7 +135,15 @@ export async function POST(request: NextRequest) {
     total += shippingCost;
 
     // Get shipping address
-    let shippingData;
+    type ShippingData = {
+      address: string;
+      city: string;
+      state: string | null;
+      postal: string;
+      country: string;
+      carrier: string | null;
+    };
+    let shippingData: ShippingData;
     if (validated.shippingAddressId) {
       const address = await prisma.address.findUnique({
         where: { id: validated.shippingAddressId },

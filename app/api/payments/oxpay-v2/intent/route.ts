@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireBuyer } from "@/lib/auth-helpers";
+import { requireBuyer } from "@/server/policy/auth.policy";
 import { createHostedPaymentPage } from "@/services/payments/oxpay-v2";
 import { z } from "zod";
 import { errorToResponse } from "@/lib/errors";

@@ -98,15 +98,6 @@ export async function GET(
         where: productWhere,
         include: {
           category: true,
-          seller: {
-            include: {
-              user: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
           reviews: {
             select: {
               rating: true,

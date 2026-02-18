@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireBuyer } from "@/lib/auth-helpers";
+import { requireBuyer } from "@/server/policy/auth.policy";
 
 // GET /api/orders/[id] - Get order details
 export async function GET(

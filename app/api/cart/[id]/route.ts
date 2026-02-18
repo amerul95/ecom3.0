@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { requireBuyer } from "@/lib/auth-helpers";
 import { z } from "zod";
-import { errorToResponse, handleDatabaseError, NotFoundError, AuthorizationError, ValidationError } from "@/lib/errors";
-
-const updateCartItemSchema = z.object({
-  quantity: z.number().int().positive().max(100, "Quantity cannot exceed 100"),
-});
+import { errorToResponse, handleDatabaseError } from "@/lib/errors";
+import { requireBuyer, canAccessCartItem } from "@/server/policy/cart.policy";
+import { updateCartItem, deleteCartItem } from "@/server/dal/cart.dal";
+import { updateCartItemSchema } from "@/server/dto/cart.dto";
 
 /**
  * PATCH /api/cart/[id]
@@ -20,49 +17,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireBuyer();
+    await requireBuyer(); // Ensure user is authenticated as buyer
     const { id } = await params;
+    await canAccessCartItem(id); // Check authorization via policy
+    
     const body = await request.json();
     const validated = updateCartItemSchema.parse(body);
 
-    // Verify cart item belongs to user
-    const cartItem = await prisma.cartItem.findUnique({
-      where: { id },
-      include: {
-        product: true,
-        variant: true,
-      },
-    });
-
-    if (!cartItem) {
-      throw new NotFoundError("Cart item", id);
-    }
-
-    if (cartItem.userId !== user.id) {
-      throw new AuthorizationError("You do not have permission to modify this cart item");
-    }
-
-    // Check stock availability
-    const availableStock = cartItem.variant
-      ? cartItem.variant.stock
-      : cartItem.product.stock;
-
-    if (validated.quantity > availableStock) {
-      throw new ValidationError(
-        `Insufficient stock. Available: ${availableStock}, Requested: ${validated.quantity}`
-      );
-    }
-
-    // Update quantity
-    const updated = await prisma.cartItem.update({
-      where: { id },
-      data: { quantity: validated.quantity },
-      include: {
-        product: true,
-        variant: true,
-      },
-    });
-
+    const updated = await updateCartItem(id, validated);
     return NextResponse.json(updated);
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
@@ -84,37 +46,16 @@ export async function PATCH(
   }
 }
 
-/**
- * DELETE /api/cart/[id]
- * Remove item from cart
- * @param id - Cart item ID
- * @returns Success confirmation
- */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireBuyer();
+    await requireBuyer(); // Ensure user is authenticated as buyer
     const { id } = await params;
+    await canAccessCartItem(id); // Check authorization via policy
 
-    // Verify cart item belongs to user
-    const cartItem = await prisma.cartItem.findUnique({
-      where: { id },
-    });
-
-    if (!cartItem) {
-      throw new NotFoundError("Cart item", id);
-    }
-
-    if (cartItem.userId !== user.id) {
-      throw new AuthorizationError("You do not have permission to delete this cart item");
-    }
-
-    await prisma.cartItem.delete({
-      where: { id },
-    });
-
+    await deleteCartItem(id);
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     // Handle Prisma errors

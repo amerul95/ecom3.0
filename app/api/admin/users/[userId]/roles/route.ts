@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAdmin } from "@/server/policy/auth.policy";
 import { z } from "zod";
 
 const updateUserRolesSchema = z.object({

@@ -3,14 +3,12 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import Image from 'next/image';
+import { signOut, useSession } from 'next-auth/react';
 import cart from '../../Assets/shopping-cart (1).png';
 import bbm_logo from '../../Assets/BBM_ECOMM.png';
 import { FiAlignJustify } from 'react-icons/fi';
 import { RxCross2 } from 'react-icons/rx';
 import { ShopContext } from '@/shopContext/ShopContext';
-import { AuthContext } from '@/shopContext/AuthContext';
 import { useCart } from '@/hooks/useCart';
 import type { StaticImageData } from 'next/image';
 
@@ -18,17 +16,16 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
   const shopContext = useContext(ShopContext);
-  const authContext = useContext(AuthContext);
   const router = useRouter();
-  const { data: session } = useSession();
   const { itemCount } = useCart();
   const userMenuRef = useRef<HTMLDivElement>(null);
   
-  if (!shopContext || !authContext) {
+  if (!shopContext ) {
     throw new Error('Navbar must be used within ShopContextProvider and AuthProvider');
   }
   
-  const { isAuthenticated, logout } = authContext;
+  const { data: session } = useSession();
+  const isAuthenticated = !!session;
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -52,7 +49,7 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     // signOut will handle redirect, but we can also refresh
     router.refresh();
   };
@@ -161,7 +158,7 @@ export default function Navbar() {
             <Link className='block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-900 hover:text-white' href='/apparel'>Apparel</Link>
             <Link className='block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-900 hover:text-white' href='/technology'>Technology</Link>
             <Link className='block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-900 hover:text-white' href='/drinkware'>Drinkware</Link>
-            <Link className='block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-900 hover:text-white' href='/bag'>Bags</Link>
+            <Link className='block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-900 hover:text-white' href='/bags'>Bags</Link>
             <Link className='block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-900 hover:text-white' href='/office'>Office</Link>
             {isAuthenticated ? (
               <>

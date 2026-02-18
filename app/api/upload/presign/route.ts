@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-helpers";
+import { requireAuth } from "@/server/policy/auth.policy";
 import { getPresignedPostUrl, getStoragePublicUrlSync } from "@/lib/storage";
-import { uploadSchema } from "@/lib/validations";
+import { uploadSchema } from "@/server/dto/upload.dto";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 

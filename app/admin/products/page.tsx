@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ManagerListProduct } from '@/components/managerListProduct';
 import { ProductsListSkeleton } from '@/components/skeleton';
-import { auth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { Session } from 'next-auth';
 
 async function getProducts() {
   const headersList = await headers();
@@ -27,7 +29,7 @@ async function getProducts() {
 }
 
 async function ProductsFromApi() {
-  const session = await auth();
+  const session = await getServerSession(authOptions) as Session;
   if ((session?.user as { role?: string })?.role !== 'ADMIN') {
     return null;
   }

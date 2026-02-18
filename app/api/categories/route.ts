@@ -32,12 +32,11 @@ export async function GET(request: NextRequest) {
               take: 10, // Limit products per category
               include: {
                 seller: {
-                  include: {
-                    user: {
-                      select: {
-                        name: true,
-                      },
-                    },
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    storeName: true,
                   },
                 },
               },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireBuyer } from "@/lib/auth-helpers";
+import { requireBuyer } from "@/server/policy/auth.policy";
 import { verifyWebhookSignature, OxPayState } from "@/services/payments/oxpay";
 
 // GET /api/payments/oxpay/status - Get payment status by reference number

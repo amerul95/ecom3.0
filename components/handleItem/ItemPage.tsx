@@ -10,7 +10,13 @@ import { RelatedProducts } from '../relatedproducts/RelatedProducts';
 import useFetchData from '@/shopContext/UseFetchData';
 import { ErrorCpnt } from '../error/ErrorCpnt';
 import { Loading } from '../loader/Loading';
-import { Product } from '@/shopContext/ShopContext';
+
+interface Product {
+  id: number;
+  name: string;
+  image_paths?: string;
+  [key: string]: unknown;
+}
 
 export const ItemPage: React.FC = () => {
   const params = useParams();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth-helpers";
-import { productSchema } from "@/lib/validations";
+import { requireAdmin } from "@/server/policy/auth.policy";
+import { productSchema } from "@/server/dto/product.dto";
 import { z } from "zod";
 
 // Helper function to generate slug from name

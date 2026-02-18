@@ -1,7 +1,11 @@
+import type { NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
 import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+// @ts-ignore - PrismaAdapter types may not be available but package is installed
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -11,15 +15,14 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
-  trustHost: true, // Trust localhost and other hosts in development
   providers: [
-    Google({
+    GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    Credentials({
+    CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -33,8 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         try {
           const validated = loginSchema.parse(credentials);
-          
-          // Authenticate against unified User table (all roles: BUYER, SELLER, ADMIN)
+
           const user = await prisma.user.findUnique({
             where: { email: validated.email },
           });
@@ -75,17 +77,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Handle Google OAuth sign-in
+    async signIn({ user, account }: { user: any; account: any }) {
       if (account?.provider === "google") {
-        // Check if BUYER with this email exists in database
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
         });
 
         if (!existingUser) {
-          // Create new user with Google account as BUYER
-          // Sellers should use /seller/signup to get SELLER account
           await prisma.user.create({
             data: {
               email: user.email!,
@@ -98,14 +96,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, account }) {
-      // On sign-in, set user ID, email, and role
+    async jwt({ token, user, account }: { token: JWT; user?: any; account?: any }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        // Get role from database for OAuth users
         if (account?.provider === "google") {
-          // For Google OAuth, check if user exists, default to BUYER
           const dbUser = await prisma.user.findUnique({
             where: { email: user.email! },
           });
@@ -114,50 +109,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.role = (user as any).role || "BUYER";
         }
       }
-      
-      // On subsequent requests, refresh role from database (Node.js only; Prisma doesn't run on Edge)
-      // Middleware runs on Edge, so skip DB refresh there and use existing token role
+
       const isEdge = process.env.NEXT_RUNTIME === "edge";
       if (!isEdge && token.id && token.email) {
         try {
-          // Try to find user by ID first
           let dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
             select: { id: true, role: true, email: true },
           });
-          
-          // If user not found by ID (stale session after DB reset), try by email
+
           if (!dbUser && token.email) {
             dbUser = await prisma.user.findUnique({
               where: { email: token.email as string },
               select: { id: true, role: true, email: true },
             });
-            
-            // Update token ID to match database if found by email
+
             if (dbUser) {
               token.id = dbUser.id;
             }
           }
-          
-          // Update role from database
+
           if (dbUser) {
             token.role = dbUser.role;
           } else {
-            // User not found - invalidate token by clearing it
             console.warn("User not found in database, invalidating token");
-            token.id = undefined;
-            token.email = undefined;
-            token.role = undefined;
+            const tokenAny = token as any;
+            tokenAny.id = undefined;
+            tokenAny.email = undefined;
+            tokenAny.role = undefined;
           }
         } catch (error) {
           console.error("Error refreshing user role in JWT:", error);
-          // Keep existing token values on error
         }
       }
-      
+
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
         (session.user as any).role = token.role as "BUYER" | "ADMIN";
@@ -169,5 +157,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-});
+};
 
+export default NextAuth(authOptions);
