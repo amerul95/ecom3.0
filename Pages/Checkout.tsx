@@ -5,28 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import Link from 'next/link';
-
-interface CartItem {
-  id: string;
-  quantity: number;
-  product: {
-    id: string;
-    name: string;
-    price: number | string;
-    images: string[];
-  };
-  variant: {
-    id: string;
-    name: string;
-    price: number | string | null;
-  } | null;
-}
-
-interface CartData {
-  items: CartItem[];
-  total: string;
-  itemCount: number;
-}
+import { useCart } from '@/hooks/useCart';
 
 // Helper function to format price
 function formatPrice(price: number | string | null): string {
@@ -43,7 +22,7 @@ function formatPrice(price: number | string | null): string {
 export const Checkout: React.FC = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [cart, setCart] = useState<CartData | null>(null);
+  const { cart, refreshCart } = useCart();
   const [isLoading, setIsLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,29 +60,12 @@ export const Checkout: React.FC = () => {
     }
   }, [status, router]);
 
-  // Fetch cart items
+  // Refetch cart on checkout for fresh prices/stock (never trust stale Zustand for payments)
   useEffect(() => {
-    const fetchCart = async () => {
-      if (status !== 'authenticated') return;
-
-      try {
-        setIsLoading(true);
-        const response = await axios.get('/api/cart');
-        setCart(response.data);
-      } catch (err: any) {
-        console.error('Failed to fetch cart:', err);
-        if (err.response?.status === 401) {
-          router.push('/login?redirect=' + encodeURIComponent('/checkout'));
-        } else {
-          setError('Failed to load cart items');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCart();
-  }, [status, router]);
+    if (status !== 'authenticated') return;
+    setIsLoading(true);
+    refreshCart().finally(() => setIsLoading(false));
+  }, [status, refreshCart]);
 
   const handleApplyVoucher = async () => {
     if (!voucherCode.trim()) {
@@ -226,7 +188,7 @@ export const Checkout: React.FC = () => {
 
           if (paymentResponse.data.paymentUrl) {
             console.log('🔄 [Checkout] Redirecting to OxPay gateway:', paymentResponse.data.paymentUrl);
-            // Redirect to OxPay payment gateway
+            await refreshCart(); // Sync cart state after order creation (server cleared cart)
             window.location.href = paymentResponse.data.paymentUrl;
             return; // Don't set loading to false, as we're redirecting
           } else {

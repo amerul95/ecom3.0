@@ -3,33 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import axios from 'axios';
 import Link from 'next/link';
-
-interface CartItem {
-  id: string;
-  quantity: number;
-  product: {
-    id: string;
-    name: string;
-    price: number | string;
-    images: string[];
-    category: {
-      name: string;
-    } | null;
-  };
-  variant: {
-    id: string;
-    name: string;
-    price: number | string | null;
-  } | null;
-}
-
-interface CartData {
-  items: CartItem[];
-  total: string;
-  itemCount: number;
-}
+import { useCart } from '@/hooks/useCart';
 
 // Helper function to format price
 function formatPrice(price: number | string | null): string {
@@ -45,43 +20,18 @@ function formatPrice(price: number | string | null): string {
 
 export const CartNew: React.FC = () => {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const [cart, setCart] = useState<CartData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { status } = useSession();
+  const { cart, updateQuantity, removeItem, clearCart, isHydrated } = useCart();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
-
-  // Fetch cart items from database
-  const fetchCart = async () => {
-    if (status !== 'authenticated') return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await axios.get('/api/cart');
-      setCart(response.data);
-    } catch (err: any) {
-      console.error('Failed to fetch cart:', err);
-      if (err.response?.status === 401) {
-        router.push('/login?redirect=' + encodeURIComponent('/carts'));
-      } else {
-        setError('Failed to load cart items');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login?redirect=' + encodeURIComponent('/carts'));
-      return;
-    }
-
-    if (status === 'authenticated') {
-      fetchCart();
     }
   }, [status, router]);
+
+  const isLoading = status === 'loading' || (status === 'authenticated' && !isHydrated);
 
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -89,73 +39,46 @@ export const CartNew: React.FC = () => {
       return;
     }
 
-    try {
-      setUpdatingItems(prev => new Set(prev).add(itemId));
-      setError(null);
+    setUpdatingItems((prev) => new Set(prev).add(itemId));
+    setError(null);
+    const { ok, error: err } = await updateQuantity(itemId, newQuantity);
+    setUpdatingItems((prev) => {
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
 
-      await axios.patch(`/api/cart/${itemId}`, {
-        quantity: newQuantity,
-      });
-
-      // Refresh cart after update
-      await fetchCart();
-    } catch (err: any) {
-      console.error('Failed to update cart item:', err);
-      setError(err.response?.data?.error || 'Failed to update quantity');
+    if (!ok && err) {
+      setError(err);
       setTimeout(() => setError(null), 3000);
-    } finally {
-      setUpdatingItems(prev => {
-        const next = new Set(prev);
-        next.delete(itemId);
-        return next;
-      });
     }
   };
 
   const handleRemoveItem = async (itemId: string) => {
-    try {
-      setUpdatingItems(prev => new Set(prev).add(itemId));
-      setError(null);
+    setUpdatingItems((prev) => new Set(prev).add(itemId));
+    setError(null);
+    const { ok, error: err } = await removeItem(itemId);
+    setUpdatingItems((prev) => {
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
 
-      await axios.delete(`/api/cart/${itemId}`);
-
-      // Refresh cart after delete
-      await fetchCart();
-    } catch (err: any) {
-      console.error('Failed to remove cart item:', err);
-      setError(err.response?.data?.error || 'Failed to remove item');
+    if (!ok && err) {
+      setError(err);
       setTimeout(() => setError(null), 3000);
-    } finally {
-      setUpdatingItems(prev => {
-        const next = new Set(prev);
-        next.delete(itemId);
-        return next;
-      });
     }
   };
 
   const handleClearCart = async () => {
     if (!cart || cart.items.length === 0) return;
+    if (!confirm('Are you sure you want to clear your cart?')) return;
 
-    if (!confirm('Are you sure you want to clear your cart?')) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Delete all cart items
-      await Promise.all(cart.items.map(item => axios.delete(`/api/cart/${item.id}`)));
-
-      // Refresh cart
-      await fetchCart();
-    } catch (err: any) {
-      console.error('Failed to clear cart:', err);
-      setError('Failed to clear cart');
+    setError(null);
+    const { ok, error: err } = await clearCart();
+    if (!ok && err) {
+      setError(err);
       setTimeout(() => setError(null), 3000);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -171,7 +94,7 @@ export const CartNew: React.FC = () => {
   }
 
   if (status === 'unauthenticated') {
-    return null; // Will redirect
+    return null;
   }
 
   if (!cart || cart.items.length === 0) {
@@ -226,16 +149,17 @@ export const CartNew: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {cart.items.map((item) => {
             const price = item.variant?.price
               ? Number(item.variant.price)
               : Number(item.product.price);
             const itemTotal = price * item.quantity;
-            const firstImage = item.product.images && item.product.images.length > 0
-              ? item.product.images[0]
+            const productImages = item.product.images;
+            const firstImage = productImages && productImages.length > 0
+              ? productImages[0]
               : null;
+            const productSlug = item.product.slug ?? item.product.id;
             const isUpdating = updatingItems.has(item.id);
 
             return (
@@ -258,7 +182,7 @@ export const CartNew: React.FC = () => {
 
                   <div className="flex-1">
                     <Link
-                      href={`/product/${item.product.id}`}
+                      href={`/product/${productSlug}`}
                       className="text-lg font-semibold text-gray-900 hover:text-indigo-600"
                     >
                       {item.product.name}
@@ -273,7 +197,6 @@ export const CartNew: React.FC = () => {
                     )}
 
                     <div className="flex items-center gap-4 mt-4">
-                      {/* Quantity Controls */}
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
@@ -292,7 +215,6 @@ export const CartNew: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Price */}
                       <div className="flex-1 text-right">
                         <p className="text-lg font-bold text-indigo-600">
                           S$ {formatPrice(itemTotal)}
@@ -302,7 +224,6 @@ export const CartNew: React.FC = () => {
                         </p>
                       </div>
 
-                      {/* Remove Button */}
                       <button
                         onClick={() => handleRemoveItem(item.id)}
                         disabled={isUpdating}
@@ -331,7 +252,6 @@ export const CartNew: React.FC = () => {
           })}
         </div>
 
-        {/* Order Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-4">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
@@ -370,10 +290,3 @@ export const CartNew: React.FC = () => {
     </div>
   );
 };
-
-
-
-
-
-
-

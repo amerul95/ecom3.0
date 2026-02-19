@@ -35,8 +35,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = addToCartSchema.parse(body);
     
-    const cartItem = await addToCart(user.id, validated);
-    return NextResponse.json(cartItem, { status: 201 });
+    await addToCart(user.id, validated);
+    const cart = await getCart(user.id);
+    return NextResponse.json(cart, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

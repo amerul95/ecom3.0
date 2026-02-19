@@ -68,10 +68,10 @@ export default function Navbar() {
           <div className='self-center xl:space-x-2 hidden lg:block'>
             <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/'>Home</Link>
             <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/apparel'>Apparel</Link>
-            <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/technology'>Technology</Link>
+            <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/electronics'>Technology</Link>
             <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/drinkware'>Drinkware</Link>
             <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/bag'>Bags</Link>
-            <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/office'>Office</Link>
+            <Link className='text-gray-700 hover:bg-gray-700 hover:text-white rounded-md px-1 xl:px-3 py-2 text-lg font-thin' href='/accessories'>Office</Link>
           </div>
           <div className='flex self-center justify-center justify-items-center justify-self-center content-center items-center space-x-4 mr-5'>
             {isAuthenticated ? (

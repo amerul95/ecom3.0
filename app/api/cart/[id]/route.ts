@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { errorToResponse, handleDatabaseError } from "@/lib/errors";
 import { requireBuyer, canAccessCartItem } from "@/server/policy/cart.policy";
-import { updateCartItem, deleteCartItem } from "@/server/dal/cart.dal";
+import { updateCartItem, deleteCartItem, getCart } from "@/server/dal/cart.dal";
 import { updateCartItemSchema } from "@/server/dto/cart.dto";
 
 /**
@@ -17,15 +17,16 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireBuyer(); // Ensure user is authenticated as buyer
+    const user = await requireBuyer();
     const { id } = await params;
-    await canAccessCartItem(id); // Check authorization via policy
-    
+    await canAccessCartItem(id);
+
     const body = await request.json();
     const validated = updateCartItemSchema.parse(body);
 
-    const updated = await updateCartItem(id, validated);
-    return NextResponse.json(updated);
+    await updateCartItem(id, validated);
+    const cart = await getCart(user.id);
+    return NextResponse.json(cart);
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -51,12 +52,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireBuyer(); // Ensure user is authenticated as buyer
+    const user = await requireBuyer();
     const { id } = await params;
-    await canAccessCartItem(id); // Check authorization via policy
+    await canAccessCartItem(id);
 
     await deleteCartItem(id);
-    return NextResponse.json({ success: true });
+    const cart = await getCart(user.id);
+    return NextResponse.json(cart);
   } catch (error: unknown) {
     // Handle Prisma errors
     if (typeof error === "object" && error !== null && "code" in error) {

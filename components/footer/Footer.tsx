@@ -29,18 +29,18 @@ export default function Footer() {
 
   return (
     <footer className='footer'>
-        <div className='max-w-screen-2xl px-2 mx-auto sm:px-6 lg:px-8 py-5 mt-5'>
-         <div className='sm:flex basis-1 justify-evenly py-5'>
+        <div className='max-w-screen-2xl px-2 mx-auto sm:px-4 lg:px-6 py-3 mt-3'>
+         <div className='sm:flex basis-1 justify-evenly py-3'>
          <div>
             <Link href='/'>
-              <img className='w-36 sm:w-48' src={getImageSrc(bbm_small)} alt="" />
+              <img className='w-20 sm:w-28' src={getImageSrc(bbm_small)} alt="" />
             </Link>
-            <p className='px-3 text-3xl font-bold'>Customer Guarantee</p>
-            <p className='px-3 text-xl my-3'>We promise 100% satisfaction.<br /> Customer happiness is our top priority</p>
-            <div className="relative my-5 px-3">
-              <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+            <p className='px-2 text-lg font-bold'>Customer Guarantee</p>
+            <p className='px-2 text-sm my-2'>We promise 100% satisfaction.<br /> Customer happiness is our top priority</p>
+            <div className="relative my-3 px-2">
+              <div className="absolute inset-y-0 start-0 flex items-center ps-2 pointer-events-none">
                 <svg
-                  className="w-4 h-4 text-gray-500 dark:text-gray-400 ml-3"
+                  className="w-3 h-3 text-gray-500 dark:text-gray-400 ml-2"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
@@ -52,7 +52,7 @@ export default function Footer() {
               </div>
               <button
                 onClick={HandleSend}
-                className='absolute right-8 top-0 border-l p-2 px-3 text-gray-500 hover:text-white hover:bg-purple-800 hover:rounded-r'
+                className='absolute right-6 top-0 border-l p-1.5 px-2 text-xs text-gray-500 hover:text-white hover:bg-purple-800 hover:rounded-r'
               >
                 Send
               </button>
@@ -60,103 +60,70 @@ export default function Footer() {
                 type="text"
                 id="email"
                 value={email}
-                className="outline-none max-w-xs bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-blue-100 focus:border-blue-100 block w-full ps-10 p-2.5"
+                className="outline-none max-w-[12rem] bg-gray-50 border border-gray-300 text-gray-700 text-xs rounded focus:ring-blue-100 focus:border-blue-100 block w-full ps-8 p-1.5"
                 placeholder="bbmecom@bbm.com"
                 onChange={(e) => setEmail(e.target.value)}
               />
               {isPopupVisible && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                  <div className="bg-white p-5 rounded shadow-lg text-center">
-                    <p className="text-lg font-semibold">Email sent successfully!</p>
+                  <div className="bg-white p-3 rounded shadow-lg text-center">
+                    <p className="text-sm font-semibold">Email sent successfully!</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
-            <div className='my-3 px-8 lg:px-0'>
-                <div className='text-lg font-medium lg:text-2xl'>Information</div>
-                <ul className='text-gray-600'>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl' href={'/aboutus'}>About Us</Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl' href={'/paymentinfo'}>Payment & Shipping</Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl' href={'/return'}>Returns & refunds
-                        </Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl' href={'/contactus'}>Contact Us</Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl' href={'#'}>FAQs</Link>
-                    </li>
+            <div className='my-2 px-4 lg:px-0'>
+                <div className='text-sm font-medium lg:text-base'>Information</div>
+                <ul className='text-gray-600 text-xs lg:text-sm mt-1'>
+                    <li><Link className='text-gray-600 hover:underline' href={'/aboutus'}>About Us</Link></li>
+                    <li><Link className='text-gray-600 hover:underline' href={'/paymentinfo'}>Payment & Shipping</Link></li>
+                    <li><Link className='text-gray-600 hover:underline' href={'/return'}>Returns & refunds</Link></li>
+                    <li><Link className='text-gray-600 hover:underline' href={'/contactus'}>Contact Us</Link></li>
+                    <li><Link className='text-gray-600 hover:underline' href={'#'}>FAQs</Link></li>
                 </ul>
             </div>
-            <div className='my-3 px-8 lg:px-0'>
-                <div className='text-lg font-medium lg:text-2xl'>Popular Products</div>
-                <ul className=' flex-wrap flex flex-col h-48 lg:h-72'>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/apparel'}>T-Shirts</Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/drinkware'}>Ceramic Mugs
-                        </Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/bag'}>Non Woven Bags</Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/office/92'}>Lanyards</Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/office'}>Button Badges</Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/office'}>Stationaries
-                        </Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/technology'}>Displays
-                        </Link>
-                    </li>
-                    <li>
-                        <Link className='text-gray-600 text-xs lg:text-xl mr-2' href={'/bag'}>Papers
-                        </Link>
-                    </li>
-
+            <div className='my-2 px-4 lg:px-0'>
+                <div className='text-sm font-medium lg:text-base'>Popular Products</div>
+                <ul className='flex-wrap flex flex-col h-28 lg:h-40 text-xs lg:text-sm mt-1'>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/apparel'}>T-Shirts</Link></li>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/drinkware'}>Ceramic Mugs</Link></li>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/bag'}>Non Woven Bags</Link></li>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/office/92'}>Lanyards</Link></li>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/office'}>Button Badges</Link></li>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/office'}>Stationaries</Link></li>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/technology'}>Displays</Link></li>
+                    <li><Link className='text-gray-600 hover:underline mr-1' href={'/bag'}>Papers</Link></li>
                 </ul>
             </div>
-            <div className='px-8 lg:px-0'>
-                <div className='text-lg lg:text-2xl font-medium '>Contact</div>
-                <ul className='flex-col flex gap-2 mt-2'>
-                    <li className='inline-flex items-center gap-4'>
-                        <img src={getImageSrc(facebook_icon)} alt="" />
-                        <a href='https://facebook.com/bbmhq1' className='text-gray-600' target="_blank" rel="noopener noreferrer">Facebook</a>
+            <div className='px-4 lg:px-0'>
+                <div className='text-sm lg:text-base font-medium'>Contact</div>
+                <ul className='flex-col flex gap-1 mt-1'>
+                    <li className='inline-flex items-center gap-2'>
+                        <img src={getImageSrc(facebook_icon)} alt="" className='w-4 h-4' />
+                        <a href='https://facebook.com/bbmhq1' className='text-gray-600 text-xs lg:text-sm' target="_blank" rel="noopener noreferrer">Facebook</a>
                     </li>
-                    <li className='inline-flex items-center gap-4'>
-                        <img src={getImageSrc(instagram_icon)} alt="" />
-                        <a href='https://instagram.com/bytonbytemanagement' className='text-gray-600' target="_blank" rel="noopener noreferrer">Instagram</a>
+                    <li className='inline-flex items-center gap-2'>
+                        <img src={getImageSrc(instagram_icon)} alt="" className='w-4 h-4' />
+                        <a href='https://instagram.com/bytonbytemanagement' className='text-gray-600 text-xs lg:text-sm' target="_blank" rel="noopener noreferrer">Instagram</a>
                     </li>
                 </ul>
             </div>
         </div>
         </div>
         <hr className='max-w-7xl mx-auto border-gray-800' />
-        <div className='mx-auto text-center m-5 p-5'>
-            <p className='text-2xl font-medium'>We Accept</p>
-            <div className='flex justify-center items-center lg:space-x-8 my-5 flex-wrap lg:flex-nowrap'>
-                <img className='mx-3 sm:mx-0' src="/images/visa-seeklogo.png" alt="" />
-                <img className='mx-3 sm:mx-0' src="/images/mc_symbol.png" alt="" />
-                <img className='mx-3 sm:mx-0' src="/images/logo-maybank2u-1.png" alt="" />
-                {/* cimb.png is missing - uncomment when image is added */}
-                {/* <img className='mx-3 sm:mx-0' src="/images/cimb.png" alt="" /> */}
-                <img className='mx-3 sm:mx-0' src="/images/grab.png" alt="" />
-                <img className='mx-3 sm:mx-0' src="/images/boost.png" alt="" />
-                <img className='mx-3 sm:mx-0' src="/images/tng.png" alt="" />
+        <div className='mx-auto text-center m-3 p-3'>
+            <p className='text-sm font-medium'>We Accept</p>
+            <div className='flex justify-center items-center lg:space-x-4 my-3 flex-wrap lg:flex-nowrap gap-1'>
+                <img className='w-8 h-6 object-contain mx-1' src="/images/visa-seeklogo.png" alt="" />
+                <img className='w-8 h-6 object-contain mx-1' src="/images/mc_symbol.png" alt="" />
+                <img className='w-8 h-6 object-contain mx-1' src="/images/logo-maybank2u-1.png" alt="" />
+                {/* <img className='w-8 h-6 object-contain mx-1' src="/images/cimb.png" alt="" /> */}
+                <img className='w-8 h-6 object-contain mx-1' src="/images/grab.png" alt="" />
+                <img className='w-8 h-6 object-contain mx-1' src="/images/boost.png" alt="" />
+                <img className='w-8 h-6 object-contain mx-1' src="/images/tng.png" alt="" />
             </div>
-            <div className='text-gray-500 text-xs lg:text-sm lg:leading-7'>
+            <div className='text-gray-500 text-[10px] lg:text-xs lg:leading-5 mt-2'>
             <p>Terms of Service | Privacy Policy</p>
             <p>©2024 Byton Byte Management Sdn Bhd. All Rights Reserved.
             </p>

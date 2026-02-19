@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import Link from 'next/link';
+import { useCart } from '@/hooks/useCart';
 import { Card } from '@/components/card/Card';
 
 interface Product {
@@ -53,7 +54,8 @@ function formatPrice(price: number | string | null): string {
 export const ProductDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
+  const { addToCart } = useCart();
   const slug = params?.slug as string | undefined;
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,30 +102,17 @@ export const ProductDetailPage: React.FC = () => {
       return;
     }
 
-    try {
-      setIsAddingToCart(true);
-      setCartMessage(null);
+    setIsAddingToCart(true);
+    setCartMessage(null);
+    const { ok, error } = await addToCart(product.id, quantity, selectedVariant ?? undefined);
+    setIsAddingToCart(false);
 
-      const response = await axios.post('/api/cart', {
-        productId: product.id,
-        variantId: selectedVariant || undefined,
-        quantity,
-      });
-
-      if (response.status === 201 || response.status === 200) {
-        setCartMessage('Added to cart!');
-        setTimeout(() => setCartMessage(null), 2000);
-      }
-    } catch (error: any) {
-      console.error('Failed to add to cart:', error);
-      if (error.response?.status === 401) {
-        router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
-      } else {
-        setCartMessage(error.response?.data?.error || 'Failed to add to cart');
-        setTimeout(() => setCartMessage(null), 3000);
-      }
-    } finally {
-      setIsAddingToCart(false);
+    if (ok) {
+      setCartMessage('Added to cart!');
+      setTimeout(() => setCartMessage(null), 2000);
+    } else if (error) {
+      setCartMessage(error);
+      setTimeout(() => setCartMessage(null), 3000);
     }
   };
 
@@ -139,29 +128,16 @@ export const ProductDetailPage: React.FC = () => {
       return;
     }
 
-    try {
-      setIsAddingToCart(true);
-      setCartMessage(null);
+    setIsAddingToCart(true);
+    setCartMessage(null);
+    const { ok, error } = await addToCart(product.id, quantity, selectedVariant ?? undefined);
+    setIsAddingToCart(false);
 
-      const response = await axios.post('/api/cart', {
-        productId: product.id,
-        variantId: selectedVariant || undefined,
-        quantity,
-      });
-
-      if (response.status === 201 || response.status === 200) {
-        router.push('/checkout');
-      }
-    } catch (error: any) {
-      console.error('Failed to add to cart:', error);
-      if (error.response?.status === 401) {
-        router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
-      } else {
-        setCartMessage(error.response?.data?.error || 'Failed to process');
-        setTimeout(() => setCartMessage(null), 3000);
-      }
-    } finally {
-      setIsAddingToCart(false);
+    if (ok) {
+      router.push('/checkout');
+    } else if (error) {
+      setCartMessage(error);
+      setTimeout(() => setCartMessage(null), 3000);
     }
   };
 

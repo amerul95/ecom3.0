@@ -14,6 +14,7 @@ export const SettingsPage: React.FC = () => {
     name: '',
     email: '',
     phone: '',
+    address: '',
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -27,7 +28,8 @@ export const SettingsPage: React.FC = () => {
       setFormData({
         name: session.user.name || '',
         email: session.user.email || '',
-        phone: '', // Phone not in session, will need to fetch from API
+        phone: '',
+        address: '',
       });
       setIsLoading(false);
     }
@@ -143,6 +145,21 @@ export const SettingsPage: React.FC = () => {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="+60 12-345-6789"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+              Address (Optional)
+            </label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter your address"
             />
           </div>
 

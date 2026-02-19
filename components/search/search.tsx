@@ -16,13 +16,19 @@ export default function Search() {
         return searchParams.get('search') || '';
     });
 
-    // Sync state with URL when URL changes externally (e.g., browser back/forward)
-    useEffect(() => {
-        const urlSearch = searchParams?.get('search') || '';
-        if (urlSearch !== searchTerm) {
-            setSearchTerm(urlSearch);
+    const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event?.currentTarget)
+        const inputSearchValue = formData.get('search') as string;
+        console.log('inputSearchValue', inputSearchValue);
+        const params = new URLSearchParams();
+        if(inputSearchValue){
+            params.set('search', inputSearchValue);
+        } else {
+            params.delete('search');
         }
-    }, [searchParams]); // Only sync when URL changes, don't update URL
+        router.replace(`${pathname}?${params.toString()}`);
+    }
 
     // Debounce search updates - this will trigger server-side refetch via URL params
     useEffect(() => {
@@ -47,7 +53,7 @@ export default function Search() {
             } else {
                 params.delete('search');
             }
-            
+
             const paramsString = params.toString();
             const basePath = pathname || '/';
             const newUrl = paramsString ? `${basePath}?${paramsString}` : basePath;
@@ -57,19 +63,21 @@ export default function Search() {
         return () => clearTimeout(timer);
     }, [searchTerm, pathname, router]); // Removed searchParams to prevent infinite loop
 
-    const handleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(event.target.value);
-    }, []);
+    // const handleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    //     setSearchTerm(event.target.value);
+    // }, []);
     
     return (
         <div className="w-full">
+            <form onSubmit={handleSearch}>
             <input 
                 type="text" 
                 placeholder="Search products..." 
                 value={searchTerm}
-                onChange={handleChange}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50"
             />
+            </form>
         </div>
     )
 }
