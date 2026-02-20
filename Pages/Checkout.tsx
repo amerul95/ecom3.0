@@ -120,9 +120,8 @@ export const Checkout: React.FC = () => {
       return;
     }
 
-    // Only OxPay is enabled for now
-    if (paymentMethod !== 'oxpay') {
-      setError('Only OxPay payment is currently available. Please select OxPay to proceed.');
+    if (paymentMethod !== 'oxpay' && paymentMethod !== 'toyyibpay') {
+      setError('Please select a valid payment method.');
       return;
     }
 
@@ -168,56 +167,27 @@ export const Checkout: React.FC = () => {
       const orderId = orderResponse.data.id;
       console.log('✅ [Checkout] Order ID:', orderId);
 
-      // Step 2: Handle payment - Only OxPay is enabled
-      if (paymentMethod === 'oxpay') {
-        // Redirect to OxPay payment gateway
-        try {
-          console.log('🔵 [Checkout] Creating payment intent for order:', orderId);
-          
-          const paymentResponse = await axios.post('/api/payments/oxpay-v2/intent', {
-            orderId: orderId,
-          });
+      // Step 2: Handle payment - redirect to gateway
+      const intentUrl =
+        paymentMethod === 'toyyibpay'
+          ? '/api/payments/toyyibpay/intent'
+          : '/api/payments/oxpay-v2/intent';
 
-          console.log('✅ [Checkout] Payment intent response received:', {
-            status: paymentResponse.status,
-            data: paymentResponse.data,
-            hasPaymentUrl: !!paymentResponse.data?.paymentUrl,
-            paymentUrl: paymentResponse.data?.paymentUrl,
-            referenceNo: paymentResponse.data?.referenceNo,
-          });
-
-          if (paymentResponse.data.paymentUrl) {
-            console.log('🔄 [Checkout] Redirecting to OxPay gateway:', paymentResponse.data.paymentUrl);
-            await refreshCart(); // Sync cart state after order creation (server cleared cart)
-            window.location.href = paymentResponse.data.paymentUrl;
-            return; // Don't set loading to false, as we're redirecting
-          } else {
-            console.error('❌ [Checkout] No paymentUrl in response:', paymentResponse.data);
-            throw new Error('Payment URL not received from server');
-          }
-        } catch (paymentErr: any) {
-          console.error('❌ [Checkout] Failed to create payment intent:', {
-            error: paymentErr,
-            message: paymentErr.message,
-            response: paymentErr.response,
-            responseData: paymentErr.response?.data,
-            responseStatus: paymentErr.response?.status,
-            stack: paymentErr.stack,
-          });
-          
-          const errorMessage = paymentErr.response?.data?.error 
-            || paymentErr.message 
-            || 'Failed to initiate payment. Please try again.';
-          
-          console.error('❌ [Checkout] Error message to display:', errorMessage);
-          setError(errorMessage);
-          setIsPlacingOrder(false);
+      try {
+        const paymentResponse = await axios.post(intentUrl, { orderId });
+        const paymentUrl = paymentResponse.data?.paymentUrl;
+        if (paymentUrl) {
+          await refreshCart();
+          window.location.href = paymentUrl;
           return;
         }
-      } else {
-        // This should not happen as we validate above, but just in case
-        console.warn('⚠️ [Checkout] Invalid payment method selected:', paymentMethod);
-        setError('Only OxPay payment is currently available.');
+        throw new Error('Payment URL not received from server');
+      } catch (paymentErr: any) {
+        const errorMessage =
+          paymentErr.response?.data?.error ||
+          paymentErr.message ||
+          'Failed to initiate payment. Please try again.';
+        setError(errorMessage);
         setIsPlacingOrder(false);
         return;
       }
@@ -513,6 +483,43 @@ export const Checkout: React.FC = () => {
                   <p className="text-xs text-green-600 mt-2 font-medium">✓ Payment gateway active</p>
                 </div>
                 {paymentMethod === 'oxpay' && (
+                  <div className="ml-4 shrink-0">
+                    <svg className="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </label>
+
+              {/* ToyyibPay Option (Sandbox) */}
+              <label
+                className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  paymentMethod === 'toyyibpay'
+                    ? 'border-indigo-600 bg-indigo-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="toyyibpay"
+                  checked={paymentMethod === 'toyyibpay'}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="sr-only"
+                />
+                <div className="flex items-center justify-center w-12 h-12 bg-emerald-600 rounded-lg mr-4 shrink-0">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-900 text-lg">ToyyibPay</span>
+                    <span className="text-xs font-semibold text-amber-600 bg-amber-100 px-2 py-1 rounded">Sandbox</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">FPX, Credit/Debit Cards (dev.toyyibpay.com)</p>
+                </div>
+                {paymentMethod === 'toyyibpay' && (
                   <div className="ml-4 shrink-0">
                     <svg className="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

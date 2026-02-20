@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
           },
           payment: {
             create: {
-              provider: "oxpay",
+              provider: validated.paymentMethod === "toyyibpay" ? "toyyibpay" : "oxpay",
               amount: total,
               status: "INITIATED",
               currency: CURRENCY,

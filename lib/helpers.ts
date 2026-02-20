@@ -9,3 +9,12 @@ export function formatPrice(
   if (typeof price === "string") return parseFloat(price).toFixed(2);
   return parseFloat(price.toString()).toFixed(2);
 }
+
+/** Format a date string for display (e.g. "Feb 19, 2025"). */
+export function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}

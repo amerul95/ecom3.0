@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireBuyer } from "@/server/policy/auth.policy";
-import { createHostedPaymentPage } from "@/services/payments/oxpay-v2";
+import { createHostedPaymentPage } from "@/Payment/handler/OxpayHandler";
 import { z } from "zod";
 import { errorToResponse } from "@/lib/errors";
 import { CURRENCY } from "@/types";

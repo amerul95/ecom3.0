@@ -41,8 +41,8 @@ function ReceiptContent() {
   const [payment, setPayment] = useState<PaymentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const ref = searchParams.get('ref');
-  const returnStatus = searchParams.get('status');
+  const ref = searchParams?.get('ref') ?? null;
+  const returnStatus = searchParams?.get('status') ?? null;
   const isReturnFailed = returnStatus === 'failed' || returnStatus === 'cancelled';
 
   useEffect(() => {
@@ -65,24 +65,20 @@ function ReceiptContent() {
 
     try {
       setIsLoading(true);
-      // Find payment by reference number (try v2 first, fallback to v1)
+      let response;
       try {
-        const response = await axios.get(`/api/payments/oxpay-v2/status?ref=${encodeURIComponent(ref)}`);
-        // Transform v2 response to match expected format
-        setPayment({
-          id: response.data.payment.id,
-          status: response.data.payment.status,
-          amount: response.data.payment.amount,
-          currency: response.data.payment.currency,
-          providerRef: response.data.payment.providerRef,
-          order: response.data.order,
-        });
-      } catch (v2Error: any) {
-        // Fallback to v1 endpoint
-        console.log("⚠️ [Receipt] v2 endpoint failed, trying v1:", v2Error);
-        const response = await axios.get(`/api/payments/oxpay/status?ref=${encodeURIComponent(ref)}`);
-        setPayment(response.data);
+        response = await axios.get(`/api/payments/oxpay-v2/status?ref=${encodeURIComponent(ref)}`);
+      } catch {
+        response = await axios.get(`/api/payments/toyyibpay/status?ref=${encodeURIComponent(ref)}`);
       }
+      setPayment({
+        id: response.data.payment.id,
+        status: response.data.payment.status,
+        amount: response.data.payment.amount,
+        currency: response.data.payment.currency,
+        providerRef: response.data.payment.providerRef,
+        order: response.data.order,
+      });
     } catch (err: any) {
       console.error('Failed to fetch payment status:', err);
       setError(err.response?.data?.error || 'Failed to load payment status');

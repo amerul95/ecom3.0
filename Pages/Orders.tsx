@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
+import { formatPrice, formatDate } from '@/lib/helpers';
 
 interface OrderItem {
   id: string;
@@ -41,27 +42,6 @@ interface Order {
   } | null;
 }
 
-// Helper function to format price
-function formatPrice(price: number | string): string {
-  if (typeof price === 'number') {
-    return price.toFixed(2);
-  }
-  if (typeof price === 'string') {
-    return parseFloat(price).toFixed(2);
-  }
-  return '0.00';
-}
-
-// Helper function to format date
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
 // Helper function to get status color
 function getStatusColor(status: string): string {
   const statusLower = status.toLowerCase();
@@ -73,56 +53,11 @@ function getStatusColor(status: string): string {
   return 'bg-gray-100 text-gray-800';
 }
 
-export const OrdersPage: React.FC = () => {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function OrdersPage({ orders }: { orders: Order[] }) {
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login?redirect=' + encodeURIComponent('/orders'));
-      return;
-    }
+const [error,setError] = useState<string | null>(null);
 
-    if (status === 'authenticated') {
-      fetchOrders();
-    }
-  }, [status, router]);
 
-  const fetchOrders = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await axios.get('/api/orders');
-      setOrders(response.data.orders || []);
-    } catch (err: any) {
-      console.error('Failed to fetch orders:', err);
-      if (err.response?.status === 401) {
-        router.push('/login?redirect=' + encodeURIComponent('/orders'));
-      } else {
-        setError('Failed to load orders');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (status === 'loading' || isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <p className="mt-4 text-gray-600">Loading orders...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated') {
-    return null; // Will redirect
-  }
 
   if (error) {
     return (
@@ -130,7 +65,6 @@ export const OrdersPage: React.FC = () => {
         <div className="text-center py-12">
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={fetchOrders}
             className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
           >
             Try Again

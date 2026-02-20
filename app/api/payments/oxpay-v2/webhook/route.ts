@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyWebhookSignature, mapTransactionStateToPaymentStatus, mapTransactionStateToOrderStatus } from "@/services/payments/oxpay-v2";
+import { verifyWebhookSignature, mapTransactionStateToPaymentStatus, mapTransactionStateToOrderStatus } from "@/Payment/handler/OxpayHandler";
 
 /**
  * POST /api/payments/oxpay-v2/webhook

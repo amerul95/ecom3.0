@@ -13,13 +13,11 @@ interface ProductListHeaderProps {
     name: string;
     slug: string;
   } | null;
-  productCount: number;
 }
 
 export function ProductListHeader({
   category,
   categoryData,
-  productCount,
 }: ProductListHeaderProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -75,7 +73,6 @@ export function ProductListHeader({
         <SortSelect value={sortBy} onChange={setSortBy} />
       </div>
       
-      <p className="text-center m-3">Showing {productCount} products</p>
     </div>
   );
 }
