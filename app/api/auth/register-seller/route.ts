@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(validated.password, 10);
 
-    // Create user with SELLER role and seller profile
+    // Create user with SELLER role
     const user = await prisma.user.create({
       data: {
         name: validated.name,
@@ -41,12 +41,8 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         role: Role.SELLER,
         emailVerified: new Date(),
-        sellerProfile: {
-          create: {
-            storeName: `${validated.name}'s Store`,
-            verified: false, // Requires admin approval
-          },
-        },
+        storeName: `${validated.name}'s Store`,
+        verified: false, // Requires admin approval
       },
       select: {
         id: true,

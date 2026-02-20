@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
 import { formatPriceValue } from '@/lib/products';
@@ -42,7 +42,7 @@ export function EditProductForm({ product, categories, onError }: EditProductFor
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<ProductFormData>({
-    resolver: zodResolver(productFormSchema),
+    resolver: zodResolver(productFormSchema) as Resolver<ProductFormData>,
     defaultValues: {
       name: product.name,
       description: product.description,

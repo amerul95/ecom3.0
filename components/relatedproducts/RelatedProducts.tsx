@@ -29,7 +29,7 @@ export const RelatedProducts: React.FC = () => {
   if (isLoading) return <Loading />;
   if (error) return <ErrorCpnt />;
 
-  const handleAddToCart = (itemId: number) => {
+  const handleAddToCart = (itemId: number | string) => {
     addToCart(itemId);
   };
 
@@ -49,7 +49,7 @@ export const RelatedProducts: React.FC = () => {
     .filter(product => product.id !== parseInt(itemID || '0', 10))
     .map(product => ({
       ...product,
-      truncated_name: truncateName(product.name, 2),
+      truncated_name: truncateName(product.name ?? '', 2),
       first_image_path: product.image_paths ? product.image_paths.split(',')[0].trim() : '',
     }));
 

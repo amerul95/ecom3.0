@@ -1,4 +1,4 @@
-import { PaymentInfo } from '../../Pages/PaymentInfo';
+import { PaymentInfo } from '@/views/PaymentInfo';
 
 export default function PaymentInfoPage() {
   return <PaymentInfo />;

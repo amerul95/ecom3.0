@@ -20,14 +20,10 @@ export async function GET(
               include: {
                 category: true,
                 seller: {
-                  include: {
-                    user: {
-                      select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                      },
-                    },
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
                   },
                 },
               },

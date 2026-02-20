@@ -1,4 +1,4 @@
-import { Return } from '../../Pages/Return';
+import { Return } from '@/views/Return';
 
 export default function ReturnPage() {
   return <Return />;

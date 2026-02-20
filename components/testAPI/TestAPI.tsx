@@ -30,7 +30,7 @@ export const TestAPI: React.FC = () => {
                         <p>Printing Size: {product.printing_size}</p>
                         <div>
                             {product.image_paths ? product.image_paths.split(', ').map((path, index) => (
-                                <img key={index} src={`https://backend-run-79be31c2d90c.herokuapp.com/images/${product.category}/${path}`} alt={`Product ${index + product.id}`} />
+                                <img key={index} src={`https://backend-run-79be31c2d90c.herokuapp.com/images/${product.category}/${path}`} alt={`Product ${index}-${product.id}`} />
                             )) : <p>No images available</p>}
                         </div>
                     </li>

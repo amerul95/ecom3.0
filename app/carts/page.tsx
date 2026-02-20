@@ -1,4 +1,4 @@
-import { CartNew } from '../../Pages/CartNew';
+import { CartNew } from '@/views/CartNew';
 
 export default function CartsPage() {
   return <CartNew />;

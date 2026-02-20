@@ -2,8 +2,7 @@
 
 import React, { useContext, useState } from 'react';
 import { SetQuantity } from '../setQuantity/SetQuantity';
-import { ShopContext } from '@/shopContext/ShopContext';
-import { Product } from '@/shopContext/ShopContext';
+import { ShopContext, Product } from '@/shopContext/ShopContext';
 
 interface DetailsProps {
   item: Product;

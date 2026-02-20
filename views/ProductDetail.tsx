@@ -21,10 +21,10 @@ interface Product {
     slug: string;
   } | null;
   seller: {
-    user: {
-      name: string | null;
-      email: string | null;
-    };
+    id?: string;
+    name: string | null;
+    email: string | null;
+    storeName?: string | null;
   };
   variants: Array<{
     id: string;

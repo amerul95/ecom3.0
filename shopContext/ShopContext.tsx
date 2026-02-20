@@ -2,6 +2,24 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 
+export interface Product {
+  id: number | string;
+  name?: string;
+  description?: string;
+  colors?: string;
+  sizes?: string;
+  materials?: string;
+  new_price?: number | string;
+  price?: number | string;
+  weight?: string;
+  printing_method?: string;
+  printing_size?: string;
+  image?: string;
+  images?: string[];
+  image_paths?: string;
+  category?: string;
+}
+
 export interface CartItem {
   id: number | string;
   quantity: number;

@@ -13,6 +13,7 @@ datasource db {
 // Enums
 enum Role {
   BUYER
+  SELLER
   ADMIN
 }
 
