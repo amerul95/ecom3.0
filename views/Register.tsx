@@ -92,7 +92,6 @@ export const Register: React.FC = () => {
         setIsLoading(false);
       }
     } catch (err) {
-      console.error('Error:', err);
       setError('An error occurred. Please try again later.');
       setIsLoading(false);
     }
@@ -104,7 +103,6 @@ export const Register: React.FC = () => {
     try {
       await signIn('google', { callbackUrl: '/' });
     } catch (err) {
-      console.error('Google sign-up error:', err);
       setError('Failed to sign up with Google');
       setIsLoading(false);
     }

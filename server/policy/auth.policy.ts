@@ -68,22 +68,6 @@ export async function requireAdmin(): Promise<AuthUser> {
 }
 
 /**
- * Require seller role (or admin)
- * @returns AuthUser with SELLER or ADMIN role
- * @throws AuthorizationError if not authenticated or wrong role
- */
-export async function requireSeller(): Promise<AuthUser> {
-  const user = await requireAuth();
-  if (user.role === Role.ADMIN) {
-    return user;
-  }
-  if (user.role !== Role.SELLER) {
-    throw new AuthorizationError("This action requires seller access");
-  }
-  return user;
-}
-
-/**
  * Require specific role(s)
  * @param roles - Single role or array of roles
  * @returns AuthUser with matching role

@@ -76,7 +76,6 @@ export const ProductDetailPage: React.FC = () => {
         const response = await axios.get(`/api/products/${slug}`);
         setProduct(response.data);
       } catch (err: any) {
-        console.error('Failed to fetch product:', err);
         if (err.response?.status === 404) {
           setError('Product not found');
         } else {

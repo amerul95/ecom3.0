@@ -120,8 +120,8 @@ export default function NewProductPage() {
       try {
         const response = await axios.get('/api/categories');
         setCategories(response.data.categories || []);
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
+      } catch {
+        // Categories fetch failed
       }
     };
     fetchCategories();
@@ -194,7 +194,6 @@ export default function NewProductPage() {
 
       return publicUrl;
     } catch (error: any) {
-      console.error('Image upload failed:', error);
       let errorMessage = error.response?.data?.error || error.message;
       setError(errorMessage);
       throw error;
@@ -230,8 +229,8 @@ export default function NewProductPage() {
     
     try {
       await Promise.all(uploadPromises);
-    } catch (error) {
-      console.error('Some images failed to upload:', error);
+    } catch {
+      // Errors surfaced via handleImageUpload
     }
     
     e.target.value = '';
@@ -308,7 +307,6 @@ export default function NewProductPage() {
         router.push('/admin/products');
       }
     } catch (error: any) {
-      console.error('Failed to create product:', error);
       setError(
         error.response?.data?.error ||
         error.response?.data?.details?.map((d: any) => d.message).join(', ') ||
@@ -362,7 +360,6 @@ export default function NewProductPage() {
         router.push('/admin/products');
       }, 1200);
     } catch (error: any) {
-      console.error('Failed to create products:', error);
       const message =
         error.response?.data?.error ||
         error.response?.data?.details?.map((d: any) => d.message).join(', ') ||
@@ -799,8 +796,8 @@ export default function NewProductPage() {
                                 try {
                                   const url = await handleImageUpload(file, currentImages.length + i);
                                   uploadedUrls.push(url);
-                                } catch (err) {
-                                  console.error('Image upload failed:', err);
+                                } catch {
+                                  setError(`Failed to upload ${file.name}`);
                                 }
                               }
                               updateMultipleProduct(productIndex, 'images', [...currentImages, ...uploadedUrls]);

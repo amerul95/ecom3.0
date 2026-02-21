@@ -30,7 +30,6 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log("❌ Auth: Missing email or password");
           return null;
         }
 
@@ -42,22 +41,17 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
-            console.log(`❌ Auth: User not found: ${validated.email}`);
             return null;
           }
 
           if (!user.password) {
-            console.log(`❌ Auth: User has no password set: ${validated.email}`);
             return null;
           }
 
           const isValid = await bcrypt.compare(validated.password, user.password);
           if (!isValid) {
-            console.log(`❌ Auth: Invalid password for: ${validated.email}`);
             return null;
           }
-
-          console.log(`✅ Auth: Successful login for ${validated.email} (${user.role})`);
 
           return {
             id: user.id,
@@ -67,7 +61,6 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
           } as any;
         } catch (error) {
-          console.error("❌ Auth error:", error);
           return null;
         }
       },
@@ -132,14 +125,13 @@ export const authOptions: NextAuthOptions = {
           if (dbUser) {
             token.role = dbUser.role;
           } else {
-            console.warn("User not found in database, invalidating token");
             const tokenAny = token as any;
             tokenAny.id = undefined;
             tokenAny.email = undefined;
             tokenAny.role = undefined;
           }
         } catch (error) {
-          console.error("Error refreshing user role in JWT:", error);
+          // User not found or DB error - token remains as is
         }
       }
 

@@ -50,7 +50,6 @@ export const Login: React.FC = () => {
         router.refresh();
       }
     } catch (err) {
-      console.error('Error:', err);
       setError('An error occurred. Please try again later.');
     } finally {
       setIsLoading(false);
@@ -63,7 +62,6 @@ export const Login: React.FC = () => {
     try {
       await signIn('google', { callbackUrl: '/' });
     } catch (err) {
-      console.error('Google sign-in error:', err);
       setError('Failed to sign in with Google');
       setIsLoading(false);
     }

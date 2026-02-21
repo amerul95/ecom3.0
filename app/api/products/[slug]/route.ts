@@ -111,7 +111,6 @@ export async function GET(
       relatedProducts: relatedWithRating,
     });
   } catch (error: any) {
-    console.error("GET /api/products/[slug] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

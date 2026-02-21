@@ -22,7 +22,7 @@ export const TestAPI: React.FC = () => {
     fetch('/api/products?limit=20')
       .then((response) => response.json())
       .then((data: ProductsResponse) => setProducts(data.products ?? []))
-      .catch((error) => console.error('Error fetching products:', error));
+      .catch(() => {});
   }, []);
 
   return (

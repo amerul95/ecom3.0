@@ -9,26 +9,19 @@ import { errorToResponse } from "@/lib/errors";
  * @returns Payment and order details
  */
 export async function GET(request: NextRequest) {
-  console.log("🔵 [API v2] GET /api/payments/oxpay-v2/status called");
-
   try {
     const user = await requireBuyer();
-    console.log("✅ [API v2] User authenticated:", { userId: user.id, email: user.email });
 
     const searchParams = request.nextUrl.searchParams;
     const ref = searchParams.get("ref") || searchParams.get("orderId");
-    console.log("📋 [API v2] Query parameters:", { ref });
 
     if (!ref) {
-      console.error("❌ [API v2] Missing reference number");
       return NextResponse.json(
         { error: "Missing reference number" },
         { status: 400 }
       );
     }
 
-    // Find payment by order ID (merchant_reference_id) or providerRef (session_id)
-    console.log("🔍 [API v2] Searching for payment with reference:", ref);
     const payment = await prisma.payment.findFirst({
       where: {
         OR: [
@@ -61,17 +54,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log("📦 [API v2] Payment found:", {
-      paymentId: payment?.id,
-      orderId: payment?.orderId,
-      status: payment?.status,
-      providerRef: payment?.providerRef,
-      amount: payment?.amount?.toString(),
-      currency: payment?.currency,
-    });
-
     if (!payment) {
-      console.error("❌ [API v2] Payment not found for reference:", ref);
       return NextResponse.json(
         { error: "Payment not found" },
         { status: 404 }
@@ -80,20 +63,11 @@ export async function GET(request: NextRequest) {
 
     // Verify order belongs to user
     if (payment.order.userId !== user.id) {
-      console.error("❌ [API v2] Unauthorized access:", {
-        orderUserId: payment.order.userId,
-        requestUserId: user.id,
-      });
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 403 }
       );
     }
-
-    console.log("✅ [API v2] Returning payment status:", {
-      status: payment.status,
-      orderStatus: payment.order.status,
-    });
 
     return NextResponse.json({
       payment: {
@@ -111,12 +85,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error("❌ [API v2] GET /api/payments/oxpay-v2/status error:", {
-      error,
-      message: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-
     const { status, body } = errorToResponse(error);
     return NextResponse.json(body, { status });
   }

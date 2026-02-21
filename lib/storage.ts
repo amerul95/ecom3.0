@@ -81,7 +81,6 @@ export async function getPresignedPostUrl(
     // For Supabase native API, return the upload endpoint
     return `${supabaseUrl}/storage/v1/object/${BUCKET_NAME}/${key}`;
   } catch (error: any) {
-    console.error("Error creating presigned URL:", error);
     throw error;
   }
 }
@@ -126,7 +125,6 @@ export async function getStoragePublicUrl(key: string): Promise<string> {
 
     return signedData.signedUrl;
   } catch (error: any) {
-    console.error("Error getting storage URL:", error);
     // Fallback to public URL
     if (!supabaseAdmin) {
       throw error;
@@ -199,7 +197,6 @@ export async function uploadFile(
       publicUrl: urlData.publicUrl,
     };
   } catch (error: any) {
-    console.error("Error uploading file:", error);
     throw error;
   }
 }
@@ -220,7 +217,6 @@ export async function deleteFile(key: string): Promise<void> {
       throw new Error(`Failed to delete file: ${error.message}`);
     }
   } catch (error: any) {
-    console.error("Error deleting file:", error);
     throw error;
   }
 }

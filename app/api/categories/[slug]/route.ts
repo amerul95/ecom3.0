@@ -11,8 +11,7 @@ export async function GET(
     await ensureDefaultCategories();
 
     const { slug } = await params;
-    console.log('🔍 API: Fetching category by slug:', slug);
-    
+
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -23,8 +22,6 @@ export async function GET(
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    console.log('📋 Query params:', { page, limit, skip, search, minPrice, maxPrice, sortBy, sortOrder });
-
     const category = await prisma.category.findUnique({
       where: { slug },
       include: {
@@ -33,24 +30,13 @@ export async function GET(
       },
     });
 
-    console.log('📁 Category found:', category ? {
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      hasChildren: category.children.length > 0,
-      hasParent: !!category.parent
-    } : 'NOT FOUND');
-
     if (!category) {
-      console.log('❌ Category not found for slug:', slug);
-      
       // Check if any categories exist at all
       const allCategories = await prisma.category.findMany({
         select: { slug: true, name: true },
         take: 10,
       });
-      console.log('📋 Available categories in database:', allCategories);
-      
+
       return NextResponse.json(
         { 
           error: "Category not found",
@@ -91,8 +77,6 @@ export async function GET(
     //   verified: true,
     // };
 
-    console.log('🔎 Product filter (where clause):', JSON.stringify(productWhere, null, 2));
-
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where: productWhere,
@@ -117,16 +101,6 @@ export async function GET(
       }),
       prisma.product.count({ where: productWhere }),
     ]);
-
-    console.log('📦 Raw products from database:', products.length);
-    console.log('📊 Total products count:', total);
-    console.log('📋 Products details:', products.map(p => ({
-      id: p.id,
-      name: p.name,
-      categoryId: p.categoryId,
-      sellerId: p.sellerId,
-      images: p.images?.length || 0
-    })));
 
     // Calculate average ratings
     const productsWithRating = products.map((product) => {
@@ -155,17 +129,8 @@ export async function GET(
       },
     };
 
-    console.log('✅ API Response:', {
-      categoryName: category.name,
-      categorySlug: category.slug,
-      productsCount: productsWithRating.length,
-      totalProducts: total,
-      pagination: response.pagination
-    });
-
     return NextResponse.json(response);
   } catch (error: any) {
-    console.error("GET /api/categories/[slug] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

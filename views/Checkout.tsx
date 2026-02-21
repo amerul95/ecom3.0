@@ -84,7 +84,6 @@ export const Checkout: React.FC = () => {
       setVoucherDiscount(mockDiscount);
       setVoucherApplied(true);
     } catch (err: any) {
-      console.error('Failed to apply voucher:', err);
       setVoucherError(err.response?.data?.error || 'Invalid voucher code');
       setVoucherApplied(false);
       setVoucherDiscount(0);
@@ -126,19 +125,10 @@ export const Checkout: React.FC = () => {
     }
 
     try {
-      console.log('🔵 [Checkout] handlePlaceOrder called');
-      console.log('📋 [Checkout] Order details:', {
-        cartItems: cart?.items.length,
-        total: total,
-        paymentMethod,
-        shippingInfo,
-      });
-
       setIsPlacingOrder(true);
       setError(null);
 
       // Step 1: Create order
-      console.log('🔄 [Checkout] Creating order...');
       const orderResponse = await axios.post('/api/orders', {
         shippingInfo: {
           address: shippingInfo.address,
@@ -153,19 +143,11 @@ export const Checkout: React.FC = () => {
         paymentMethod: paymentMethod,
       });
 
-      console.log('✅ [Checkout] Order created:', {
-        status: orderResponse.status,
-        orderId: orderResponse.data?.id,
-        orderData: orderResponse.data,
-      });
-
       if (orderResponse.status !== 201) {
-        console.error('❌ [Checkout] Order creation failed:', orderResponse.status);
         throw new Error('Failed to create order');
       }
 
       const orderId = orderResponse.data.id;
-      console.log('✅ [Checkout] Order ID:', orderId);
 
       // Step 2: Handle payment - redirect to gateway
       const intentUrl =
@@ -192,7 +174,6 @@ export const Checkout: React.FC = () => {
         return;
       }
     } catch (err: any) {
-      console.error('Failed to place order:', err);
       setError(err.response?.data?.error || 'Failed to place order. Please try again.');
       setIsPlacingOrder(false);
     }

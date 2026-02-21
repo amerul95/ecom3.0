@@ -80,7 +80,6 @@ function ReceiptContent() {
         order: response.data.order,
       });
     } catch (err: any) {
-      console.error('Failed to fetch payment status:', err);
       setError(err.response?.data?.error || 'Failed to load payment status');
     } finally {
       setIsLoading(false);

@@ -243,11 +243,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error: unknown) {
-    // Log the full error for debugging
-    console.error("POST /api/orders error:", error);
-    
     if (error instanceof z.ZodError) {
-      console.error("Validation error details:", error.issues);
       return NextResponse.json(
         { error: "Validation error", details: error.issues },
         { status: 400 }
@@ -256,23 +252,12 @@ export async function POST(request: NextRequest) {
     
     // Handle Prisma errors
     if (typeof error === "object" && error !== null && "code" in error) {
-      console.error("Database error:", {
-        code: (error as { code: string }).code,
-        meta: (error as { meta?: unknown }).meta,
-      });
       const dbError = handleDatabaseError(error);
       const { status, body } = errorToResponse(dbError);
       return NextResponse.json(body, { status });
     }
     
-    // Handle AppError instances
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    }
-    
     const { status, body } = errorToResponse(error);
-    console.error("Returning error response:", { status, body });
     return NextResponse.json(body, { status });
   }
 }

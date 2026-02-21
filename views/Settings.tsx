@@ -49,7 +49,6 @@ export const SettingsPage: React.FC = () => {
         text: 'Settings saved successfully!',
       });
     } catch (error: any) {
-      console.error('Failed to save settings:', error);
       setMessage({
         type: 'error',
         text: error.response?.data?.error || 'Failed to save settings',

@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
           verified: true,
         },
       });
-      console.log("✅ Updated admin user with store name:", dbUser.id);
     }
 
     // Create products in transaction
@@ -116,7 +115,6 @@ export async function POST(request: NextRequest) {
 
         createdProducts.push(product);
       } catch (error: any) {
-        console.error(`Error creating product ${i + 1}:`, error);
         errors.push({
           index: i,
           error: error.message || "Failed to create product",
@@ -158,7 +156,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("POST /api/admin/products/bulk error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",

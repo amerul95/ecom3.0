@@ -54,14 +54,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ categories });
   } catch (error: any) {
-    console.error("GET /api/categories error:", error);
-    console.error("Error details:", {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
-      stack: error.stack,
-    });
-    
     // Check if it's a database schema issue
     if (error.code === 'P2001' || error.message?.includes('does not exist') || error.message?.includes('Unknown table')) {
       return NextResponse.json(

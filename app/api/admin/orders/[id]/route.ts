@@ -62,7 +62,6 @@ export async function GET(
     if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
-    console.error("GET /api/admin/orders/[id] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -128,7 +127,6 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    console.error("PATCH /api/admin/orders/[id] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

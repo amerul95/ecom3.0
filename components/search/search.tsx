@@ -20,7 +20,6 @@ export default function Search() {
         event.preventDefault();
         const formData = new FormData(event?.currentTarget)
         const inputSearchValue = formData.get('search') as string;
-        console.log('inputSearchValue', inputSearchValue);
         const params = new URLSearchParams();
         if(inputSearchValue){
             params.set('search', inputSearchValue);

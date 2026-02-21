@@ -57,8 +57,7 @@ const ShopContextProvider: React.FC<ShopContextProviderProps> = ({ children }) =
     if (savedCart) {
       try {
         setCartItems(JSON.parse(savedCart));
-      } catch (err) {
-        console.error('Error parsing cart from localStorage:', err);
+      } catch {
         setCartItems([]);
       }
     }

@@ -52,7 +52,6 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, roles });
   } catch (error: any) {
-    console.error('Failed to update user roles:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request data', details: error.issues },

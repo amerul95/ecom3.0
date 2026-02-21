@@ -74,7 +74,6 @@ export const ProductDetailPage: React.FC = () => {
         const response = await axios.get(`/api/products/${slug}`);
         setProduct(response.data);
       } catch (err: any) {
-        console.error('Failed to fetch product:', err);
         if (err.response?.status === 404) {
           setError('Product not found');
         } else {
@@ -115,7 +114,6 @@ export const ProductDetailPage: React.FC = () => {
         setTimeout(() => setCartMessage(null), 2000);
       }
     } catch (error: any) {
-      console.error('Failed to add to cart:', error);
       if (error.response?.status === 401) {
         router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
       } else {
@@ -153,7 +151,6 @@ export const ProductDetailPage: React.FC = () => {
         router.push('/checkout');
       }
     } catch (error: any) {
-      console.error('Failed to add to cart:', error);
       if (error.response?.status === 401) {
         router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
       } else {

@@ -46,10 +46,8 @@ export const Cart: React.FC = () => {
   };
 
   const handleClearCart = () => {
-    console.log('Clearing cart...');
     setCartItems([]);
     saveCartToLocalStorage([]);
-    console.log('Cart cleared and local storage updated.');
   };
 
   return (

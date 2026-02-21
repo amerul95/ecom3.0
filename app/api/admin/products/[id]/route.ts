@@ -42,7 +42,6 @@ export async function GET(
 
     return NextResponse.json({ product });
   } catch (error: any) {
-    console.error("GET /api/admin/products/[id] error:", error);
     return NextResponse.json(
       { error: "Failed to fetch product.", details: error.message },
       { status: 500 }
@@ -188,7 +187,6 @@ export async function PATCH(
       product: updatedProduct,
     });
   } catch (error: any) {
-    console.error("PATCH /api/admin/products/[id] error:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -239,7 +237,6 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Product deleted successfully." });
   } catch (error: any) {
-    console.error("DELETE /api/admin/products/[id] error:", error);
     return NextResponse.json(
       { error: "Failed to delete product.", details: error.message },
       { status: 500 }

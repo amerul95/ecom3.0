@@ -60,7 +60,6 @@ export async function GET(request: NextRequest) {
           verified: true,
         },
       });
-      console.log("✅ Updated admin user with store name:", dbUser.id);
     }
 
     const [products, total] = await Promise.all([
@@ -96,9 +95,6 @@ export async function GET(request: NextRequest) {
     if (error.message === "Unauthorized" || error.message.includes("Forbidden")) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
-    console.error("GET /api/admin/products error:", error);
-    console.error("Error stack:", error.stack);
-    console.error("Error code:", error.code);
     return NextResponse.json(
       { 
         error: "Internal server error",
@@ -146,7 +142,6 @@ export async function POST(request: NextRequest) {
           verified: true,
         },
       });
-      console.log("✅ Updated admin user with store name:", dbUser.id);
     }
 
     // Validate input
@@ -210,7 +205,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("POST /api/admin/products error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
