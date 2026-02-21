@@ -225,7 +225,7 @@ export default function SellerProductsPage() {
                     <div className="p-4">
                     <h3 className="font-semibold text-gray-900 mb-2">{product.name}</h3>
                     <p className="text-2xl font-bold text-indigo-600 mb-2">
-                      S$ {formatPrice(product.price)}
+                      RM {formatPrice(product.price)}
                     </p>
                     <div className="flex justify-between text-sm text-gray-600 mb-4">
                       <span>Stock: {product.stock}</span>

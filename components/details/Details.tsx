@@ -27,7 +27,15 @@ export const Details: React.FC<DetailsProps> = ({ item }) => {
   const itemMaterials = item.materials ? item.materials.split(',').map(material => material.trim()) : [];
 
   const handleAddToCart = () => {
-    addToCart(item.id, quantity, selectedColor, selectedSize);
+    const rawPrice = item.price;
+    const price = typeof rawPrice === 'string' ? parseFloat(rawPrice) : rawPrice;
+    const productInfo = {
+      name: item.name,
+      price: typeof price === 'number' ? price : undefined,
+      image: item.images?.[0] ?? item.image,
+      category: typeof item.category === 'string' ? item.category : (item.category && 'slug' in (item.category as object) ? (item.category as { slug: string }).slug : undefined),
+    };
+    addToCart(item.id, quantity, selectedColor, selectedSize, productInfo);
   };
 
   return (
@@ -90,7 +98,7 @@ export const Details: React.FC<DetailsProps> = ({ item }) => {
       </div>
       <div className="mb-5">
         <p className="text-base font-normal text-slate-600">Price</p>
-        <p className="text-xl font-semibold">S${item.new_price}</p>
+        <p className="text-xl font-semibold">RM {item.price}</p>
       </div>
       <div className="text-base">
         {itemMaterials.length > 0 && (

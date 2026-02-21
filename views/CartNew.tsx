@@ -217,10 +217,10 @@ export const CartNew: React.FC = () => {
 
                       <div className="flex-1 text-right">
                         <p className="text-lg font-bold text-indigo-600">
-                          S$ {formatPrice(itemTotal)}
+                          RM {formatPrice(itemTotal)}
                         </p>
                         <p className="text-sm text-gray-500">
-                          S$ {formatPrice(price)} each
+                          RM {formatPrice(price)} each
                         </p>
                       </div>
 
@@ -259,7 +259,7 @@ export const CartNew: React.FC = () => {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal ({cart.itemCount} items)</span>
-                <span>S$ {formatPrice(cart.total)}</span>
+                <span>RM {formatPrice(cart.total)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
@@ -267,7 +267,7 @@ export const CartNew: React.FC = () => {
               </div>
               <div className="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-900">
                 <span>Total</span>
-                <span className="text-indigo-600">S$ {formatPrice(cart.total)}</span>
+                <span className="text-indigo-600">RM {formatPrice(cart.total)}</span>
               </div>
             </div>
 

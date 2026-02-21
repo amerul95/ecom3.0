@@ -270,7 +270,7 @@ export const Checkout: React.FC = () => {
                     className="text-indigo-600 focus:ring-indigo-500"
                   />
                   <span className="ml-2 font-medium">{opt.label}</span>
-                  <span className="text-gray-600">S$ {formatPrice(opt.cost)}</span>
+                  <span className="text-gray-600">RM {formatPrice(opt.cost)}</span>
                 </label>
               ))}
             </div>
@@ -395,7 +395,7 @@ export const Checkout: React.FC = () => {
                       )}
                       <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                       <p className="text-lg font-semibold text-indigo-600 mt-1">
-                        S$ {formatPrice(itemTotal)}
+                        RM {formatPrice(itemTotal)}
                       </p>
                     </div>
                   </div>
@@ -575,21 +575,21 @@ export const Checkout: React.FC = () => {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal ({cart.itemCount} items)</span>
-                <span>S$ {formatPrice(subtotal)}</span>
+                <span>RM {formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping ({selectedShipping.label})</span>
-                <span>S$ {formatPrice(shipping)}</span>
+                <span>RM {formatPrice(shipping)}</span>
               </div>
               {voucherApplied && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount ({voucherDiscount}%)</span>
-                  <span>- S$ {formatPrice(discount)}</span>
+                  <span>- RM {formatPrice(discount)}</span>
                 </div>
               )}
               <div className="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-900">
                 <span>Total</span>
-                <span className="text-indigo-600">S$ {formatPrice(total)}</span>
+                <span className="text-indigo-600">RM {formatPrice(total)}</span>
               </div>
             </div>
 
@@ -599,7 +599,7 @@ export const Checkout: React.FC = () => {
                 disabled={isPlacingOrder}
                 className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
               >
-                {isPlacingOrder ? 'Processing...' : `Place Order - S$ ${formatPrice(total)}`}
+                {isPlacingOrder ? 'Processing...' : `Place Order - RM ${formatPrice(total)}`}
               </button>
             </form>
 

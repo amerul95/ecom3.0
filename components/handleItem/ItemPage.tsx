@@ -11,34 +11,50 @@ import useFetchData from '@/shopContext/UseFetchData';
 import { ErrorCpnt } from '../error/ErrorCpnt';
 import { Loading } from '../loader/Loading';
 
-interface Product {
-  id: number;
+interface ApiProduct {
+  id: string;
   name: string;
-  image_paths?: string;
+  description: string;
+  price: number;
+  slug: string;
+  images: string[];
+  category?: { slug: string; name: string } | null;
+  colors?: string;
+  sizes?: string;
+  materials?: string;
+  weight?: string;
+  printing_method?: string;
+  printing_size?: string;
   [key: string]: unknown;
+}
+
+interface ProductsResponse {
+  products: ApiProduct[];
 }
 
 export const ItemPage: React.FC = () => {
   const params = useParams();
   const itemID = params?.itemID as string | undefined;
   const category = params?.category as string | undefined;
-  const { datas, isLoading, error } = useFetchData<Product[]>('https://backend-run-79be31c2d90c.herokuapp.com/products');
+  const apiUrl = itemID
+    ? `/api/products?productId=${itemID}&productSlug=${itemID}`
+    : '/api/products?limit=1';
+  const { datas, isLoading, error } = useFetchData<ProductsResponse>(apiUrl);
 
   const capitalizeLetter = (string?: string): string => {
     return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
   };
 
-  if (isLoading) return <Loading/>;
-  if (error) return <ErrorCpnt/>;
+  if (isLoading) return <Loading />;
+  if (error) return <ErrorCpnt />;
 
-  const item = datas ? datas.find(product => product.id === parseInt(itemID || '0', 10)) : null;
+  const item = datas?.products?.[0] ?? null;
 
   if (!item) {
     return <div>Item not found</div>;
   }
 
-  // Convert image_paths to an array and use the first image
-  const images = item.image_paths ? item.image_paths.split(',').map(img => img.trim()) : [];
+  const images = item.images ?? [];
 
   return (
     <div className="max-w-7xl px-2 mx-auto sm:px-6 lg:px-10 m-2 my-4 md:my-8">
@@ -105,7 +121,12 @@ export const ItemPage: React.FC = () => {
         ) : (
           <p className="w-96 text-center mt-5 py-5 text-2xl font-bold">No images available</p>
         )}
-        <Details item={item} />
+        <Details
+          item={{
+            ...item,
+            category: item.category?.slug ?? item.category?.name,
+          }}
+        />
         <div className='hidden lg:block'>
         <RelatedProducts />
         </div>

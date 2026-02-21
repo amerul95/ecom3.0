@@ -135,7 +135,7 @@ const [error,setError] = useState<string | null>(null);
                         {order.status.toUpperCase()}
                       </span>
                       <span className="text-lg font-bold text-indigo-600">
-                        S$ {formatPrice(order.total)}
+                        RM {formatPrice(order.total)}
                       </span>
                     </div>
                   </div>
@@ -178,7 +178,7 @@ const [error,setError] = useState<string | null>(null);
                             <div className="mt-2 flex items-center justify-between">
                               <span className="text-sm text-gray-500">Quantity: {item.quantity}</span>
                               <span className="text-sm font-semibold text-gray-900">
-                                S$ {formatPrice(item.price)} each
+                                RM {formatPrice(item.price)} each
                               </span>
                             </div>
                           </div>

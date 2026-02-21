@@ -10,6 +10,47 @@ export async function getProducts(
 ): Promise<ProductListResponse> {
   const validated = productQuerySchema.parse(query);
 
+  // Fetch single product by ID or slug if requested
+  const singleProductRef = validated.productId || validated.productSlug;
+  if (singleProductRef) {
+    const product = await prisma.product.findFirst({
+      where: {
+        status: "ACTIVE",
+        OR: [
+          ...(validated.productId ? [{ id: validated.productId }] : []),
+          ...(validated.productSlug ? [{ slug: validated.productSlug }] : []),
+        ],
+      },
+      include: {
+        category: true,
+        reviews: { select: { rating: true } },
+        _count: { select: { reviews: true } },
+      },
+    });
+    if (!product) {
+      return {
+        products: [],
+        pagination: { page: 1, limit: 1, total: 0, pages: 0 },
+      };
+    }
+    const avgRating =
+      product.reviews.length > 0
+        ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
+        : 0;
+    const { reviews, _count, ...rest } = product;
+    return {
+      products: [
+        {
+          ...rest,
+          price: Number(product.price),
+          averageRating: avgRating,
+          reviewCount: _count.reviews,
+        },
+      ],
+      pagination: { page: 1, limit: 1, total: 1, pages: 1 },
+    };
+  }
+
   // Validate price range
   if (validated.minPrice !== undefined && validated.maxPrice !== undefined) {
     if (validated.minPrice > validated.maxPrice) {
@@ -23,6 +64,16 @@ export async function getProducts(
   const sortBy = validated.sortBy;
   const sortOrder = validated.sortOrder;
 
+  // Resolve categorySlug to categoryId if needed
+  let categoryId = validated.categoryId;
+  if (validated.categorySlug && !categoryId) {
+    const cat = await prisma.category.findUnique({
+      where: { slug: validated.categorySlug },
+      select: { id: true },
+    });
+    if (cat) categoryId = cat.id;
+  }
+
   const where: {
     categoryId?: string;
     status?: "ACTIVE";
@@ -35,8 +86,8 @@ export async function getProducts(
     status: "ACTIVE",
   };
 
-  if (validated.categoryId) {
-    where.categoryId = validated.categoryId;
+  if (categoryId) {
+    where.categoryId = categoryId;
   }
 
   if (validated.minPrice !== undefined || validated.maxPrice !== undefined) {

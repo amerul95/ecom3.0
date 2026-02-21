@@ -91,7 +91,7 @@ export function ManagerListProduct({ products}: ManagerListProductProps) {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">{product.name}</CardTitle>
               <p className="text-2xl font-bold text-primary">
-                S$ {formatPrice(product.price)}
+                RM {formatPrice(product.price)}
               </p>
               <CardDescription className="flex justify-between text-sm">
                 <span>Stock: {product.stock}</span>

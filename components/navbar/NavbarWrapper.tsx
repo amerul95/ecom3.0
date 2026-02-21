@@ -2,8 +2,13 @@
 
 import { usePathname } from 'next/navigation';
 import Navbar from './Navbar';
+import type { NavbarCategory } from '@/lib/navbar-categories';
 
-export function NavbarWrapper() {
+interface NavbarWrapperProps {
+  categories: NavbarCategory[];
+}
+
+export function NavbarWrapper({ categories }: NavbarWrapperProps) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
 
@@ -11,5 +16,5 @@ export function NavbarWrapper() {
     return null;
   }
 
-  return <Navbar />;
+  return <Navbar categories={categories} />;
 }

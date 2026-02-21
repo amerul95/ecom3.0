@@ -1,16 +1,25 @@
 'use client';
 
 import React, { useContext, useState } from 'react';
+import Link from 'next/link';
 import { ShopContext } from '@/shopContext/ShopContext';
 import { useParams } from 'next/navigation';
 import { Loading } from '../loader/Loading';
 import useFetchData from '@/shopContext/UseFetchData';
 import { ErrorCpnt } from '../error/ErrorCpnt';
-import { Product } from '@/shopContext/ShopContext';
 
-interface ProductWithDetails extends Product {
-  truncated_name?: string;
-  first_image_path?: string;
+interface ApiProduct {
+  id: string;
+  name: string;
+  price: number;
+  slug: string;
+  images: string[];
+  category?: { slug: string; name: string } | null;
+}
+
+interface ProductsResponse {
+  products: ApiProduct[];
+  pagination: { page: number; limit: number; total: number; pages: number };
 }
 
 export const RelatedProducts: React.FC = () => {
@@ -22,15 +31,22 @@ export const RelatedProducts: React.FC = () => {
   const params = useParams();
   const category = params?.category as string | undefined;
   const itemID = params?.itemID as string | undefined;
-  const apiUrl = category ? `https://backend-run-79be31c2d90c.herokuapp.com/products/${category}` : 'https://backend-run-79be31c2d90c.herokuapp.com/products';
-  const { datas, isLoading, error } = useFetchData<Product[]>(apiUrl);
+  const apiUrl = `/api/products?categorySlug=${category || ''}&limit=20`;
+  const { datas, isLoading, error } = useFetchData<ProductsResponse>(apiUrl);
   const [visibleItems, setVisibleItems] = useState<number>(4);
+
+  const products = datas?.products ?? [];
 
   if (isLoading) return <Loading />;
   if (error) return <ErrorCpnt />;
 
-  const handleAddToCart = (itemId: number | string) => {
-    addToCart(itemId);
+  const handleAddToCart = (product: ApiProduct) => {
+    addToCart(product.id, 1, '', '', {
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0],
+      category: product.category?.slug ?? product.category?.name,
+    });
   };
 
   const handleSeeMore = () => {
@@ -45,38 +61,43 @@ export const RelatedProducts: React.FC = () => {
     return name;
   };
 
-  const products: ProductWithDetails[] = (datas || [])
-    .filter(product => product.id !== parseInt(itemID || '0', 10))
-    .map(product => ({
-      ...product,
-      truncated_name: truncateName(product.name ?? '', 2),
-      first_image_path: product.image_paths ? product.image_paths.split(',')[0].trim() : '',
-    }));
+  const filteredProducts = products.filter(
+    (product) => product.id !== itemID && product.slug !== itemID
+  );
 
   return (
     <div className='max-w-44'>
       <h3 className='text-lg font-semibold mt-2 mb-5'>RELATED PRODUCTS</h3>
-      {products.slice(0, visibleItems).map(product => (
-        <div key={product.id} className='flex mb-5'>
-          <img 
-            src={`https://backend-run-79be31c2d90c.herokuapp.com/images/${category}/${product.first_image_path}`} 
-            alt={product.name} 
-            className='border border-gray-500 rounded w-24 h-24' 
-          />
-          <div className='flex flex-col justify-evenly'>
-            <p className='ml-3 text-base font-medium leading-4'>{product.truncated_name}</p>
-            <p className='ml-3 text-base font-medium'>S${product.new_price}</p>
-            <button 
-              onClick={() => handleAddToCart(product.id)} 
-              className='text-xs bg-pink-900 text-white rounded ml-3 w-20 py-1'>
-              Add to cart
-            </button>
+      {filteredProducts.slice(0, visibleItems).map((product) => {
+        const firstImage = product.images?.[0] || '/images/placeholder.png';
+        return (
+          <div key={product.id} className='flex mb-5'>
+            <Link href={`/product/${product.slug}`}>
+              <img
+                src={firstImage}
+                alt={product.name}
+                className='border border-gray-500 rounded w-24 h-24 object-cover'
+              />
+            </Link>
+            <div className='flex flex-col justify-evenly'>
+              <p className='ml-3 text-base font-medium leading-4'>
+                {truncateName(product.name ?? '', 2)}
+              </p>
+              <p className='ml-3 text-base font-medium'>RM {product.price}</p>
+              <button
+                onClick={() => handleAddToCart(product)}
+                className='text-xs bg-pink-900 text-white rounded ml-3 w-20 py-1'>
+                Add to cart
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       <div className='text-center'>
-      {visibleItems < products.length && (
-        <button onClick={handleSeeMore} className='mt-5 text-xs py-1 bg-pink-800 text-white rounded-lg font-medium px-2'>
+      {visibleItems < filteredProducts.length && (
+        <button
+          onClick={handleSeeMore}
+          className='mt-5 text-xs py-1 bg-pink-800 text-white rounded-lg font-medium px-2'>
           See More
         </button>
       )}

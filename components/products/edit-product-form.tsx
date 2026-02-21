@@ -248,7 +248,7 @@ export function EditProductForm({ product, categories, onError }: EditProductFor
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price (SGD) *</FormLabel>
+                      <FormLabel>Price (MYR) *</FormLabel>
                       <FormControl>
                         <Input type="text" placeholder="0.00" {...field} />
                       </FormControl>

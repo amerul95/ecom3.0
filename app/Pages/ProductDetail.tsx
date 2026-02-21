@@ -300,7 +300,7 @@ export const ProductDetailPage: React.FC = () => {
 
           {/* Price */}
           <div className="mb-6">
-            <p className="text-4xl font-bold text-indigo-600">S$ {displayPrice}</p>
+            <p className="text-4xl font-bold text-indigo-600">RM {displayPrice}</p>
             {product.category && (
               <p className="text-sm text-gray-500 mt-1">Category: {product.category.name}</p>
             )}
@@ -341,7 +341,7 @@ export const ProductDetailPage: React.FC = () => {
                       <div className="text-right">
                         {variant.price && (
                           <span className="text-indigo-600 font-semibold">
-                            S$ {formatPrice(variant.price)}
+                            RM {formatPrice(variant.price)}
                           </span>
                         )}
                         {variant.stock !== null && (

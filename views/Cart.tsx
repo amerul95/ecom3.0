@@ -34,7 +34,7 @@ export const Cart: React.FC = () => {
         size: item.size || 'No size selected',
         name: item.name || 'Unknown Product',
         price: item.price || 0,
-        image_path: item.image || 'default.jpg',
+        image_path: item.image || '',
         category: item.category || 'default'
       }));
   };
@@ -64,19 +64,23 @@ export const Cart: React.FC = () => {
       {cartItemsWithDetails.length > 0 ? (
         cartItemsWithDetails.map((item, index) => (
           <div key={index} className='grid lg:grid-cols-[0.5fr,2fr,1fr,1fr,1fr,0.5fr] lg:items-center lg:gap-[75px] lg:pt-5 lg:pb-1 text-[#454545] text-lg font-semibold border-b lg:ml-5 flex-wrap justify-evenly grid-cols-[1fr,2fr,1fr,1fr] '>
-            <img className='w-auto p-2' src={`https://backend-run-79be31c2d90c.herokuapp.com/images/${item.category}/${item.image_path}`} alt={item.name} />
+            <img
+              className="w-auto p-2 object-cover"
+              src={item.image_path?.startsWith('http') ? item.image_path : '/images/placeholder.png'}
+              alt={item.name}
+            />
             <div className='ml-3 lg:ml-0'>
               <p className='text-base lg:text-xl'>{item.name}</p>
               <p className='text-sm lg:text-base text-slate-500 font-normal'>{item.color}</p>
               <p className='text-sm lg:text-base text-slate-500 font-normal'>{item.size}</p>
             </div>
-            <p className='hidden lg:block'>S${item.price}</p>
+            <p className='hidden lg:block'>RM {item.price}</p>
             <CartQuantity
               itemId={item.id}
               initialQuantity={item.quantity}
               onQuantityChange={(newQuantity) => handleQuantityChange(item.id, newQuantity)}
             />
-            <p className='flex justify-center items-center' >S${item.quantity * item.price}</p>
+            <p className='flex justify-center items-center' >RM {item.quantity * item.price}</p>
             <button className='hidden lg:block' onClick={() => fullDelete(item.id, item.color, item.size)}>
               <img src="/images/cross.svg" alt="Delete" className='w-3 h-3' />
             </button>
@@ -88,7 +92,7 @@ export const Cart: React.FC = () => {
       <div>
       <hr className='ml-5 my-5'/>
       <div className='flex flex-col'>
-        <p className='text-end text-xl font-medium'>TOTAL: <span className='font-bold text-2xl ml-5 '>S${getTotalCartAmount()}</span></p>
+        <p className='text-end text-xl font-medium'>TOTAL: <span className='font-bold text-2xl ml-5 '>RM {getTotalCartAmount()}</span></p>
         <hr className='ml-5 my-5'/>
         <div className='text-end space-x-4 flex justify-end gap-3'>
           <button className='text-lg lg:text-xl font-medium text-indigo-500' onClick={handleClearCart}>Clear Cart</button>

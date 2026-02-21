@@ -74,7 +74,7 @@ async function checkUser(email: string) {
         products.forEach((product, index) => {
           console.log(`  ${index + 1}. ${product.name}`);
           console.log(`     - Slug: ${product.slug}`);
-          console.log(`     - Price: S$ ${product.price}`);
+          console.log(`     - Price: RM ${product.price}`);
           console.log(`     - Stock: ${product.stock}`);
           console.log(`     - Category: ${product.category?.name || "None"} (${product.category?.slug || "N/A"})`);
           console.log("");

@@ -2,10 +2,10 @@ import { prisma } from "./prisma";
 
 export const DEFAULT_CATEGORIES = [
   { name: "Apparel", slug: "apparel" },
-  { name: "Technology", slug: "technology" },
   { name: "Drinkware", slug: "drinkware" },
   { name: "Bags", slug: "bags" },
-  { name: "Office", slug: "office" },
+  { name: "Accessories", slug: "accessories" },
+  { name: "Electronics", slug: "electronics" },
 ];
 
 export async function ensureDefaultCategories() {

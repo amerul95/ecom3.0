@@ -37,10 +37,10 @@ export default function Footer() {
             </Link>
             <p className='px-2 text-lg font-bold'>Customer Guarantee</p>
             <p className='px-2 text-sm my-2'>We promise 100% satisfaction.<br /> Customer happiness is our top priority</p>
-            <div className="relative my-3 px-2">
-              <div className="absolute inset-y-0 start-0 flex items-center ps-2 pointer-events-none">
+            <div className="flex my-3 px-2 max-w-[14rem] border border-gray-300 rounded overflow-hidden bg-gray-50 focus-within:ring-1 focus-within:ring-blue-100 focus-within:border-blue-100">
+              <div className="flex items-center justify-center ps-2 flex-shrink-0">
                 <svg
-                  className="w-3 h-3 text-gray-500 dark:text-gray-400 ml-2"
+                  className="w-3 h-3 text-gray-500"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
@@ -50,20 +50,22 @@ export default function Footer() {
                   <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z" />
                 </svg>
               </div>
-              <button
-                onClick={HandleSend}
-                className='absolute right-6 top-0 border-l p-1.5 px-2 text-xs text-gray-500 hover:text-white hover:bg-purple-800 hover:rounded-r'
-              >
-                Send
-              </button>
               <input
                 type="text"
                 id="email"
                 value={email}
-                className="outline-none max-w-[12rem] bg-gray-50 border border-gray-300 text-gray-700 text-xs rounded focus:ring-blue-100 focus:border-blue-100 block w-full ps-8 p-1.5"
+                className="flex-1 min-w-0 outline-none bg-transparent text-gray-700 text-xs p-1.5"
                 placeholder="bbmecom@bbm.com"
                 onChange={(e) => setEmail(e.target.value)}
               />
+              <button
+                onClick={HandleSend}
+                type="button"
+                className="flex-shrink-0 self-stretch flex items-center justify-center border-l border-gray-300 px-3 text-xs text-gray-500 hover:text-white hover:bg-purple-800 transition-colors"
+              >
+                Send
+              </button>
+            </div>
               {isPopupVisible && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                   <div className="bg-white p-3 rounded shadow-lg text-center">
@@ -72,7 +74,6 @@ export default function Footer() {
                 </div>
               )}
             </div>
-          </div>
             <div className='my-2 px-4 lg:px-0'>
                 <div className='text-sm font-medium lg:text-base'>Information</div>
                 <ul className='text-gray-600 text-xs lg:text-sm mt-1'>

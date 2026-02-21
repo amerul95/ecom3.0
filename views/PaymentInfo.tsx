@@ -47,8 +47,8 @@ export const PaymentInfo: React.FC = () => {
             </div>
             </div>
             <ol className='list-decimal list-outside ml-10'>
-              <li className='text-xl font-medium mt-10'>For orders valued at S$ 2,000 or below, payment in full is required before we proceed.</li>
-              <li className='text-xl font-medium mt-5'>For orders exceeding S$ 2,000, a 70% deposit is required before production begins, with the remaining 30% payable before delivery.</li>
+              <li className='text-xl font-medium mt-10'>For orders valued at RM 2,000 or below, payment in full is required before we proceed.</li>
+              <li className='text-xl font-medium mt-5'>For orders exceeding RM 2,000, a 70% deposit is required before production begins, with the remaining 30% payable before delivery.</li>
               <li className='text-xl font-medium mt-5'>A surcharge applies to urgent orders and expedited delivery.</li>
               <li className='text-xl font-medium mt-5'>Sample visuals/mockups will be delivered via WhatsApp upon confirmation of payment.</li>
               <li className='text-xl font-medium mt-5'>We accept payments via online transfer, cash deposit machines, or checks.</li>

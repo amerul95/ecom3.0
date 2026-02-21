@@ -9,14 +9,12 @@ export interface Product {
   colors?: string;
   sizes?: string;
   materials?: string;
-  new_price?: number | string;
   price?: number | string;
   weight?: string;
   printing_method?: string;
   printing_size?: string;
   image?: string;
   images?: string[];
-  image_paths?: string;
   category?: string;
 }
 

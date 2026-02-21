@@ -67,7 +67,7 @@ export function SectionCards({ totalProducts, activeProducts, totalRevenue }: Se
         <CardHeader>
           <CardDescription>Total Revenue</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            S$ {totalRevenue.toFixed(2)}
+            RM {totalRevenue.toFixed(2)}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">

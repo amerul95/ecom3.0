@@ -141,7 +141,7 @@ export const Card: React.FC<CardProps> = ({ data }) => {
                 <span className="text-xs text-red-600 font-medium">Out of Stock</span>
               )}
             </div>
-            <p className="text-base md:text-lg font-bold text-indigo-600 mb-3">S$ {price}</p>
+            <p className="text-base md:text-lg font-bold text-indigo-600 mb-3">RM {price}</p>
             {data.category && (
               <p className="text-xs text-gray-500 mb-3">{data.category.name}</p>
             )}

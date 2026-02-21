@@ -68,7 +68,7 @@ export function ProductListHeader({
       <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-4">
         <div className="w-full sm:max-w-xs">
          
-            <Search />
+        <Search />
         </div>
         <SortSelect value={sortBy} onChange={setSortBy} />
       </div>

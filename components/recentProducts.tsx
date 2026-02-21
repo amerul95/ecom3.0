@@ -75,7 +75,7 @@ export function RecentProducts({ products, limit = DEFAULT_LIMIT }: RecentProduc
                         {product.stock}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        S$ {formatPrice(product.price)}
+                        RM {formatPrice(product.price)}
                       </TableCell>
                     </TableRow>
                   ))}

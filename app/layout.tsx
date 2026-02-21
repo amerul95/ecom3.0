@@ -3,8 +3,8 @@ import { Figtree } from 'next/font/google';
 import { Providers } from '@/provider/provider';
 import { NavbarWrapper } from '@/components/navbar/NavbarWrapper';
 import { FooterWrapper } from '@/components/footer/FooterWrapper';
+import { getNavbarCategories } from '@/lib/navbar-categories';
 import './globals.css';
-import { SessionProvider } from "next-auth/react"
 
 const figtree = Figtree({
   subsets: ['latin'],
@@ -18,16 +18,18 @@ export const metadata: Metadata = {
   description: 'BBM Ecommerce for Enterprise',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const categories = await getNavbarCategories();
+
   return (
     <html lang="en" className={figtree.variable} suppressHydrationWarning>
       <body className={figtree.className}>
         <Providers>
-          <NavbarWrapper />
+          <NavbarWrapper categories={categories} />
           {children}
           <FooterWrapper />
         </Providers>

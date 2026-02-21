@@ -8,6 +8,9 @@ export const productQuerySchema = z.object({
       return Math.min(parsed, PAGINATION_DEFAULTS.maxLimit);
     }),
     categoryId: z.string().optional(),
+    categorySlug: z.string().optional(),
+    productId: z.string().optional(),
+    productSlug: z.string().optional(),
     minPrice: z.string().optional().transform((val) => (val ? parseFloat(val) : undefined)),
     maxPrice: z.string().optional().transform((val) => (val ? parseFloat(val) : undefined)),
     search: z.string().optional(),

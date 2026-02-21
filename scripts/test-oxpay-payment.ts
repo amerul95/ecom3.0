@@ -90,7 +90,7 @@ async function testOxPayPayment() {
       },
       include: { payment: true },
     }) as unknown as typeof testOrder;
-    console.log(`✅ Order: ${testOrder.id}, S$ ${testOrder.total.toString()}`);
+    console.log(`✅ Order: ${testOrder.id}, RM ${testOrder.total.toString()}`);
   } catch (e: any) {
     console.log("❌ Order:", e.message);
     return;

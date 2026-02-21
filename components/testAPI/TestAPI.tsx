@@ -1,42 +1,58 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Product } from '@/shopContext/ShopContext';
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  images: string[];
+  category?: { slug: string; name: string } | null;
+}
+
+interface ProductsResponse {
+  products: ApiProduct[];
+}
 
 export const TestAPI: React.FC = () => {
-    const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
 
-    useEffect(() => {
-        fetch('http://localhost:3001/products')
-            .then(response => response.json())
-            .then(data => setProducts(data))
-            .catch(error => console.error('Error fetching products:', error));
-    }, []);
+  useEffect(() => {
+    fetch('/api/products?limit=20')
+      .then((response) => response.json())
+      .then((data: ProductsResponse) => setProducts(data.products ?? []))
+      .catch((error) => console.error('Error fetching products:', error));
+  }, []);
 
-    return (
-        <div>
-            <h1>Products</h1>
-            <ul>
-                {products.map(product => (
-                    <li className='border m-5 p-5' key={product.id}>
-                        <h2>{product.name}</h2>
-                        <p>Price: ${product.new_price}</p>
-                        <p>Colors: {product.colors}</p>
-                        <p>Materials: {product.materials}</p>
-                        <p>Sizes: {product.sizes}</p>
-                        <p>Description: {product.description}</p>
-                        <p>Weight: {product.weight}</p>
-                        <p>Printing Method: {product.printing_method}</p>
-                        <p>Printing Size: {product.printing_size}</p>
-                        <div>
-                            {product.image_paths ? product.image_paths.split(', ').map((path, index) => (
-                                <img key={index} src={`https://backend-run-79be31c2d90c.herokuapp.com/images/${product.category}/${path}`} alt={`Product ${index}-${product.id}`} />
-                            )) : <p>No images available</p>}
-                        </div>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-}
+  return (
+    <div>
+      <h1>Products</h1>
+      <ul>
+        {products.map((product) => (
+          <li className="border m-5 p-5" key={product.id}>
+            <h2>{product.name}</h2>
+            <p>Price: RM {product.price}</p>
+            <p>Description: {product.description}</p>
+            <p>Category: {product.category?.name ?? 'N/A'}</p>
+            <div>
+              {product.images?.length ? (
+                product.images.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img}
+                    alt={`${product.name} ${index + 1}`}
+                    className="max-w-24 h-auto mr-2"
+                  />
+                ))
+              ) : (
+                <p>No images available</p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 

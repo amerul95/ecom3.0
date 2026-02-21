@@ -183,8 +183,8 @@ export interface PaymentStatusResponse {
 /**
  * Constants
  */
-export const CURRENCY = "SGD" as const;
-export const CURRENCY_SYMBOL = "S$" as const;
+export const CURRENCY = "MYR" as const;
+export const CURRENCY_SYMBOL = "RM" as const;
 export const DEFAULT_COUNTRY = "SG" as const;
 
 export const PAGINATION_DEFAULTS = {

@@ -42,7 +42,13 @@ async function ProductsGridContent({
   );
 }
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+async function CategoryContent({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ category?: string }>;
+  searchParams: Promise<{ search?: string; sort?: string }>;
+}) {
   const { category } = await params;
   const { search } = await searchParams;
 
@@ -58,15 +64,24 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   }
 
   return (
-    <div className="max-w-7xl px-2 mx-auto sm:px-6 lg:px-10 m-2 flex my-4 md:my-8 flex-col">
+    <>
       <ProductListHeader category={category} categoryData={categoryData} />
-      <Suspense fallback={<ProductGridSkeleton />}>
+      <Suspense key={`${category ?? 'all'}-${search ?? ''}`} fallback={<ProductGridSkeleton />}>
         <ProductsGridContent
-          key={`${category ?? 'all'}-${search ?? ''}`}
           categoryId={categoryData?.id}
           search={search}
           category={category}
         />
+      </Suspense>
+    </>
+  );
+} 
+
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+  return (
+    <div className="max-w-7xl px-2 mx-auto sm:px-6 lg:px-10 m-2 flex my-4 md:my-8 flex-col">
+      <Suspense fallback={<ProductGridSkeleton />}>
+        <CategoryContent params={params} searchParams={searchParams} />
       </Suspense>
     </div>
   );

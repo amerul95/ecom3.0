@@ -100,7 +100,7 @@ export default function SellerDashboard() {
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-700 mb-2">Total Revenue</h2>
-              <p className="text-3xl font-bold text-purple-600">S$ {stats.totalRevenue.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-purple-600">RM {stats.totalRevenue.toFixed(2)}</p>
             </div>
           </div>
 

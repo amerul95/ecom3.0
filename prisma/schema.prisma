@@ -318,7 +318,7 @@ model Payment {
   providerRef    String?       // OxPay transaction id
   status         PaymentStatus @default(INITIATED)
   amount         Decimal       @db.Decimal(10,2)
-  currency       String        @default("SGD")
+  currency       String        @default("MYR")
   rawPayload     Json?         // Store raw webhook payload for audit
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

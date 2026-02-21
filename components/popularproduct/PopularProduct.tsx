@@ -9,10 +9,17 @@ import Link from 'next/link';
 import useFetchData from '@/shopContext/UseFetchData';
 import { ErrorCpnt } from '../error/ErrorCpnt';
 import { Loading } from '../loader/Loading';
-import { Product } from '@/shopContext/ShopContext';
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  price: number;
+  slug: string;
+  images: string[];
+}
 
 interface SimpleSliderProps {
-  products: Product[];
+  products: ApiProduct[];
 }
 
 function SimpleSlider({ products }: SimpleSliderProps) {
@@ -55,14 +62,14 @@ function SimpleSlider({ products }: SimpleSliderProps) {
     <div className="mx-auto text-center my-8">
       <Slider {...settings}>
         {products.map((product) => {
-          const firstImagePath = product.image_paths ? product.image_paths.split(',')[0].trim() : '';
+          const firstImage = product.images?.[0] || '/images/placeholder.png';
           return (
             <div key={product.id}>
-            <Link href={`/drinkware/${product.id}`}>
-              <img src={`https://backend-run-79be31c2d90c.herokuapp.com/images/drinkware/${firstImagePath}`} alt={`Popular Product ${product.id}`} className="mx-auto max-w-56" />
-            </Link>
-          </div>
-          )
+              <Link href={`/product/${product.slug}`}>
+                <img src={firstImage} alt={product.name} className="mx-auto max-w-56 object-cover" />
+              </Link>
+            </div>
+          );
         })}
       </Slider>
       <div className="container mx-auto mt-10 flex lg:flex-row flex-col gap-4 justify-center">
@@ -128,8 +135,15 @@ function SimpleSlider({ products }: SimpleSliderProps) {
   );
 }
 
+interface ProductsResponse {
+  products: ApiProduct[];
+}
+
 export const PopularProduct: React.FC = () => {
-  const { datas, isLoading, error } = useFetchData<Product[]>('https://backend-run-79be31c2d90c.herokuapp.com/products/drinkware');
+  const { datas, isLoading, error } = useFetchData<ProductsResponse>(
+    '/api/products?categorySlug=drinkware&limit=20'
+  );
+  const products = datas?.products ?? [];
   
   if (isLoading) return <Loading/>;
   if (error) return <ErrorCpnt/>;
@@ -144,7 +158,7 @@ export const PopularProduct: React.FC = () => {
         </h2>
       </div>
       <div>
-        <SimpleSlider products={datas || []} />
+        <SimpleSlider products={products} />
       </div>
     </div>
   );
