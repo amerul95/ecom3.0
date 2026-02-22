@@ -4,8 +4,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { Info } from 'lucide-react';
 import bbm_logo from '../Assets/BBM_ECOMM.png';
 import type { StaticImageData } from 'next/image';
+
+const DEMO_EMAIL = 'test@test.com';
+const DEMO_PASSWORD = 'Senario@123';
 
 interface FormData {
   email: string;
@@ -44,7 +48,7 @@ export const Login: React.FC = () => {
       });
 
       if (result?.error) {
-        setError('Invalid email or password. Make sure you are logging in as a buyer.');
+        setError('Invalid email or password. Please check your credentials and try again.');
       } else if (result?.ok) {
         router.push('/');
         router.refresh();
@@ -77,6 +81,27 @@ export const Login: React.FC = () => {
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Sign in to your account
           </h2>
+
+          {/* Demo credential info */}
+          <div
+            className="mt-6 flex gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3"
+            role="alert"
+          >
+            <Info className="h-5 w-5 shrink-0 text-indigo-600" aria-hidden />
+            <div className="text-sm text-indigo-900">
+              <p className="font-medium">Try the demo account</p>
+              <p className="mt-1 text-indigo-800">
+                Use <strong>test@test.com</strong> / <strong>Senario@123</strong> to access both the buyer storefront and admin dashboard.
+              </p>
+              <button
+                type="button"
+                onClick={() => setFormData({ email: DEMO_EMAIL, password: DEMO_PASSWORD })}
+                className="mt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 underline underline-offset-2"
+              >
+                Fill demo credentials
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
@@ -92,6 +117,7 @@ export const Login: React.FC = () => {
                   type="email"
                   required
                   autoComplete="email"
+                  value={formData.email}
                   className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset focus:outline-none ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                   onChange={handleChange}
                 />
@@ -116,6 +142,7 @@ export const Login: React.FC = () => {
                   type="password"
                   required
                   autoComplete="current-password"
+                  value={formData.password}
                   className="focus:outline-none block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                   onChange={handleChange}
                 />
