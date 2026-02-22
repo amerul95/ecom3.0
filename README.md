@@ -1,36 +1,133 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# E-Commerce Platform
+
+A modern full-stack e-commerce application built with Next.js, featuring product catalog, shopping cart, checkout, and payment integration (OxPay, ToyyibPay).
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **UI:** React 19, Tailwind CSS, Radix UI
+- **Database:** PostgreSQL with Prisma ORM
+- **Auth:** NextAuth.js (credentials + Google OAuth)
+- **Payments:** OxPay HPP, ToyyibPay
+- **Storage:** AWS S3 / Supabase Storage for product images
+
+## Architecture Overview
+
+This application follows a modular full-stack architecture using Next.js App Router.
+
+- Frontend: Server Components + Client Components separation
+- Backend: API routes within `app/api`
+- Authentication: NextAuth with session-based strategy
+- Database: Prisma ORM with PostgreSQL
+- Payment Flow: External PSP redirect (OxPay / ToyyibPay) + webhook verification
+- Storage: Product images stored in S3 / Supabase with secure upload handling
+
+## Data Modeling
+
+The database schema is designed using Prisma with relational modeling:
+
+- Users
+- Products
+- Categories
+- Orders
+- OrderItems
+- Payments
+- Vouchers
+
+Foreign key relationships ensure referential integrity.
+Indexes applied for product search and order lookups.
+
+## Features
+
+- **Storefront:** Browse products by category, search, product detail pages
+- **Cart & Checkout:** Add to cart, shipping info, voucher support
+- **Payments:** OxPay and ToyyibPay integration with webhooks
+- **Admin:** Dashboard, product management, order management, user management
+- **Auth:** Register, login, Google sign-in, password reset
+
+## Prerequisites
+
+- Node.js 18+
+- PostgreSQL database
+- npm or yarn
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone and install dependencies
+
+```bash
+git clone <repository-url>
+cd ecom3.0
+npm install
+```
+
+### 2. Environment variables
+
+Create a `.env` file in the project root and add your configuration. Required variables include:
+
+Key variables:
+
+- `DATABASE_URL` – PostgreSQL connection string
+- `DIRECT_URL` – Direct PostgreSQL URL (for migrations)
+- `NEXTAUTH_SECRET` – Secret for NextAuth.js
+- `NEXTAUTH_URL` – App URL (e.g. `http://localhost:3000`)
+- Payment credentials (OxPay, ToyyibPay)
+- Storage (S3 or Supabase) for image uploads
+
+### 3. Database setup
+
+```bash
+npm run db:push
+npm run db:seed
+```
+
+### 4. Run development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run db:push` | Push Prisma schema to database |
+| `npm run db:migrate` | Run database migrations |
+| `npm run db:seed` | Seed database with sample data |
+| `npm run db:studio` | Open Prisma Studio |
+| `npm run lint` | Run ESLint |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+├── app/                 # Next.js App Router pages & API routes
+│   ├── [category]/      # Category pages
+│   ├── admin/           # Admin dashboard & product management
+│   ├── api/             # API routes (cart, orders, payments, etc.)
+│   ├── checkout/        # Checkout flow
+│   └── ...
+├── components/          # Reusable UI components
+├── lib/                 # Utilities, auth config, storage
+├── prisma/              # Schema and migrations
+├── server/              # DAL, auth policies
+├── shopContext/         # Cart and shop state
+└── views/               # Page-level view components
+```
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push your code to GitHub.
+2. Import the project in [Vercel](https://vercel.com).
+3. Add environment variables.
+4. Deploy.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ensure `DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and payment/storage vars are set in the Vercel project settings.
+
+## License
+
+Private / MIT – as per your project setup.
