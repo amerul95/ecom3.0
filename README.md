@@ -89,6 +89,17 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### 5. Demo credentials
+
+You can log in with the following demo account (created by `npm run db:seed`):
+
+| Field    | Value        |
+|----------|--------------|
+| Email    | `test@test.com` |
+| Password | `Senario@123`   |
+
+This demo user has **ADMIN** role and can access both the buyer storefront and the admin dashboard at `/admin`.
+
 ## Available Scripts
 
 | Command | Description |
